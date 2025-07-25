@@ -1,45 +1,46 @@
 {
   "expo": {
-    "name": "Natively",
-    "slug": "Natively",
+    "name": "PRICE.AI",
+    "slug": "price-ai",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/natively-dark.png",
-    "userInterfaceStyle": "dark",
-    "newArchEnabled": true,
+    "icon": "./assets/images/final_quest_240x240.png",
+    "userInterfaceStyle": "light",
     "splash": {
-      "image": "./assets/images/natively-dark.png",
+      "image": "./assets/images/final_quest_240x240.png",
       "resizeMode": "contain",
-      "backgroundColor": "#000000"
+      "backgroundColor": "#1e4a72"
     },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
-      "supportsTablet": true,
-      "bundleIdentifier": "com.anonymous.Natively",
-      "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
-      }
+      "supportsTablet": true
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/natively-dark.png",
-        "backgroundColor": "#000000"
-      },
-      "package": "com.anonymous.Natively"
+        "foregroundImage": "./assets/images/final_quest_240x240.png",
+        "backgroundColor": "#1e4a72"
+      }
     },
     "web": {
       "favicon": "./assets/images/final_quest_240x240.png",
+      "name": "PRICE.AI - Smart Pricing Assistant",
+      "shortName": "PRICE.AI",
+      "lang": "en",
+      "scope": "/",
+      "themeColor": "#1e4a72",
+      "backgroundColor": "#1e4a72",
+      "display": "standalone",
+      "orientation": "portrait",
+      "startUrl": "/",
       "bundler": "metro"
     },
     "plugins": [
-      "expo-font",
       "expo-router"
     ],
-    "scheme": "natively",
     "experiments": {
       "typedRoutes": true
-    },
-    "extra": {
-      "router": {}
     }
   }
 }

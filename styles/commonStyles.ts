@@ -9,6 +9,13 @@ export const colors = {
   text: '#e3e3e3',       // Keeping light text
   grey: '#90CAF9',       // Light Blue Grey
   card: '#193cb8',       // Keeping dark card background
+  // PRICE.AI specific colors
+  priceBlue: '#1e4a72',  // Main blue from the image
+  priceYellow: '#f4c430', // Yellow accent from the image
+  priceGreen: '#4CAF50',  // Green for checkmarks
+  white: '#ffffff',
+  lightGray: '#f5f5f5',
+  darkGray: '#333333',
 };
 
 export const buttonStyles = StyleSheet.create({

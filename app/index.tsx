@@ -41,9 +41,14 @@ export default function MainScreen() {
           style={{ width: 180, height: 180 }}
           resizeMode="contain"
         />
-        <Text style={commonStyles.title}>This is a placeholder app.</Text>
-        <Text style={commonStyles.text}>Your app will be displayed here when it's ready.</Text>
+        <Text style={commonStyles.title}>Welcome to PRICE.AI</Text>
+        <Text style={commonStyles.text}>Pan India AI-Powered Smart Pricing & Lifestyle Assistant</Text>
         <View style={commonStyles.buttonContainer}>
+          <Button
+            text="View PRICE.AI Website"
+            onPress={() => router.push('/priceai')}
+            style={buttonStyles.instructionsButton}
+          />
           {canInstall && (
             <Button
               text="Install App"
@@ -53,7 +58,7 @@ export default function MainScreen() {
                   setCanInstall(false); // Update state after installation
                 }
               }}
-              style={buttonStyles.instructionsButton}
+              style={[buttonStyles.instructionsButton, { marginTop: 10 }]}
             />
           )}
         </View>

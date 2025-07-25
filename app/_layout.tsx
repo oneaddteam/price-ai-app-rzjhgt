@@ -18,6 +18,17 @@ export default function RootLayout() {
     setupErrorLogging();
 
     if (Platform.OS === 'web') {
+      // Register service worker for PWA
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/sw.js')
+          .then((registration) => {
+            console.log('SW registered: ', registration);
+          })
+          .catch((registrationError) => {
+            console.log('SW registration failed: ', registrationError);
+          });
+      }
+
       // If there's a new emulate parameter, store it
       if (emulate) {
         localStorage.setItem(STORAGE_KEY, emulate);

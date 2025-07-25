@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Text, View, TouchableOpacity, StyleSheet } from 'react-native';
+import { Text, View, TouchableOpacity, StyleSheet, Alert, Linking } from 'react-native';
 import { commonStyles, buttonStyles } from '../styles/commonStyles';
 import Button from '../components/Button';
 import { router } from 'expo-router';
@@ -31,15 +31,54 @@ const MainScreen: React.FC = () => {
   }, []);
 
   const handleInstallPWA = () => {
+    console.log('Install PWA button pressed');
     if (typeof window !== 'undefined' && (window as any).deferredPrompt) {
       (window as any).deferredPrompt.prompt();
       (window as any).deferredPrompt.userChoice.then((choiceResult: any) => {
         if (choiceResult.outcome === 'accepted') {
           console.log('User accepted the install prompt');
+          Alert.alert('Success', 'PRICE.AI has been installed successfully!');
         }
         (window as any).deferredPrompt = null;
         setCanInstall(false);
       });
+    } else {
+      Alert.alert('Install PRICE.AI', 'Add to home screen for better experience!');
+    }
+  };
+
+  const handleExploreApp = () => {
+    console.log('Explore PRICE.AI button pressed');
+    router.push('/priceai');
+  };
+
+  const handleAdminPanel = () => {
+    console.log('Admin Panel button pressed');
+    router.push('/admin');
+  };
+
+  const handleContactUs = () => {
+    console.log('Contact us pressed');
+    Alert.alert('Contact PRICE.AI', 'Choose contact method:', [
+      { text: 'Call', onPress: () => Linking.openURL('tel:08883800038') },
+      { text: 'Email', onPress: () => Linking.openURL('mailto:price.ai@gmail.com') },
+      { text: 'WhatsApp', onPress: () => Linking.openURL('https://wa.me/918883800038') },
+      { text: 'Cancel', style: 'cancel' }
+    ]);
+  };
+
+  const handleFeaturePress = (feature: string) => {
+    console.log(`${feature} feature pressed`);
+    switch (feature) {
+      case 'search':
+        Alert.alert('Smart Price Search', 'Find best prices across local & online stores instantly. Coming soon in full app!');
+        break;
+      case 'budget':
+        Alert.alert('AI Budget Planner', 'Track expenses & get personalized saving tips. Coming soon in full app!');
+        break;
+      case 'travel':
+        Alert.alert('Travel Booking', 'Book trains, buses, hotels, cinema tickets. Coming soon in full app!');
+        break;
     }
   };
 
@@ -47,7 +86,7 @@ const MainScreen: React.FC = () => {
     <SafeAreaView style={styles.container}>
       <LinearGradient colors={['#1e4a72', '#2d5aa0']} style={styles.gradient}>
         <View style={styles.content}>
-          <View style={styles.logoContainer}>
+          <TouchableOpacity style={styles.logoContainer} onPress={() => console.log('Logo pressed')}>
             <Ionicons name="pricetag" size={64} color="#FFD700" />
             <Text style={styles.title}>PRICE.AI</Text>
             <Text style={styles.subtitle}>
@@ -56,12 +95,12 @@ const MainScreen: React.FC = () => {
             <Text style={styles.tagline}>
               "விலை தெரிந்து வாங்குவது வீரம்!"
             </Text>
-          </View>
+          </TouchableOpacity>
 
           <View style={styles.buttonContainer}>
             <TouchableOpacity 
               style={styles.primaryButton}
-              onPress={() => router.push('/priceai')}
+              onPress={handleExploreApp}
             >
               <Ionicons name="globe" size={20} color="#1e4a72" />
               <Text style={styles.primaryButtonText}>Explore PRICE.AI</Text>
@@ -69,7 +108,7 @@ const MainScreen: React.FC = () => {
 
             <TouchableOpacity 
               style={styles.secondaryButton}
-              onPress={() => router.push('/admin')}
+              onPress={handleAdminPanel}
             >
               <Ionicons name="settings" size={20} color="#FFD700" />
               <Text style={styles.secondaryButtonText}>Admin Panel</Text>
@@ -84,21 +123,36 @@ const MainScreen: React.FC = () => {
                 <Text style={styles.installButtonText}>Install App</Text>
               </TouchableOpacity>
             )}
+
+            <TouchableOpacity 
+              style={styles.contactButton}
+              onPress={handleContactUs}
+            >
+              <Ionicons name="call" size={20} color="#1e4a72" />
+              <Text style={styles.contactButtonText}>Contact Us</Text>
+            </TouchableOpacity>
           </View>
 
           <View style={styles.features}>
-            <View style={styles.featureItem}>
+            <TouchableOpacity style={styles.featureItem} onPress={() => handleFeaturePress('search')}>
               <Ionicons name="search" size={24} color="#FFD700" />
               <Text style={styles.featureText}>Smart Price Search</Text>
-            </View>
-            <View style={styles.featureItem}>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.featureItem} onPress={() => handleFeaturePress('budget')}>
               <Ionicons name="analytics" size={24} color="#FFD700" />
               <Text style={styles.featureText}>AI Budget Planner</Text>
-            </View>
-            <View style={styles.featureItem}>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.featureItem} onPress={() => handleFeaturePress('travel')}>
               <Ionicons name="airplane" size={24} color="#FFD700" />
               <Text style={styles.featureText}>Travel Booking</Text>
-            </View>
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.footer}>
+            <Text style={styles.footerText}>ONE ADD TEAM • Madurai, Tamil Nadu</Text>
+            <TouchableOpacity onPress={() => Linking.openURL('mailto:price.ai@gmail.com')}>
+              <Text style={styles.footerLink}>price.ai@gmail.com</Text>
+            </TouchableOpacity>
           </View>
         </View>
       </LinearGradient>
@@ -196,21 +250,55 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
   },
+  contactButton: {
+    backgroundColor: '#96CEB4',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    borderRadius: 30,
+    gap: 8,
+  },
+  contactButtonText: {
+    color: '#1e4a72',
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
   features: {
     flexDirection: 'row',
     justifyContent: 'space-around',
     width: '100%',
     gap: 20,
+    marginBottom: 40,
   },
   featureItem: {
     alignItems: 'center',
     flex: 1,
+    padding: 12,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
   },
   featureText: {
     color: '#fff',
     fontSize: 12,
     textAlign: 'center',
     marginTop: 8,
+    fontWeight: '500',
+  },
+  footer: {
+    alignItems: 'center',
+    gap: 4,
+  },
+  footerText: {
+    color: '#fff',
+    fontSize: 12,
+    opacity: 0.8,
+  },
+  footerLink: {
+    color: '#FFD700',
+    fontSize: 12,
+    textDecorationLine: 'underline',
   },
 });
 

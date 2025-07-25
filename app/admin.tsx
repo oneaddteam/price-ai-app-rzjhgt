@@ -11,6 +11,7 @@ import {
   Modal,
   FlatList,
   Dimensions,
+  Linking,
 } from 'react-native';
 import { colors } from '../styles/commonStyles';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -58,6 +59,16 @@ interface Product {
   status: 'active' | 'pending' | 'rejected';
 }
 
+interface Vendor {
+  id: number;
+  name: string;
+  mobile: string;
+  city: string;
+  services: string;
+  status: 'active' | 'pending' | 'rejected';
+  revenue: number;
+}
+
 const AdminCard: React.FC<AdminCardProps> = ({ title, count, icon, color, onPress }) => (
   <TouchableOpacity style={[styles.adminCard, { borderLeftColor: color }]} onPress={onPress}>
     <View style={[styles.cardIcon, { backgroundColor: color + '20' }]}>
@@ -94,7 +105,7 @@ const AdminPanel: React.FC = () => {
   const [password, setPassword] = useState('');
   const [currentView, setCurrentView] = useState('dashboard');
   const [showModal, setShowModal] = useState(false);
-  const [modalType, setModalType] = useState<'users' | 'vendors' | 'products' | 'analytics'>('users');
+  const [modalType, setModalType] = useState<'users' | 'vendors' | 'products' | 'analytics' | 'addVendor' | 'addProduct' | 'createOffer'>('users');
 
   // Mock data - in real app, this would come from your backend
   const [dashboardData, setDashboardData] = useState({
@@ -156,6 +167,52 @@ const AdminPanel: React.FC = () => {
     },
   ]);
 
+  const [vendors, setVendors] = useState<Vendor[]>([
+    {
+      id: 1,
+      name: 'Raj Electronics',
+      mobile: '9876543210',
+      city: 'Chennai',
+      services: 'Mobile phones, Laptops, Accessories',
+      status: 'active',
+      revenue: 45000,
+    },
+    {
+      id: 2,
+      name: 'Priya Stores',
+      mobile: '9876543211',
+      city: 'Madurai',
+      services: 'Groceries, Daily needs',
+      status: 'pending',
+      revenue: 0,
+    },
+  ]);
+
+  const [newVendor, setNewVendor] = useState({
+    name: '',
+    mobile: '',
+    city: '',
+    services: '',
+    gst: '',
+    address: '',
+  });
+
+  const [newProduct, setNewProduct] = useState({
+    name: '',
+    category: '',
+    price: '',
+    vendor: '',
+    description: '',
+  });
+
+  const [newOffer, setNewOffer] = useState({
+    title: '',
+    description: '',
+    discount: '',
+    validTill: '',
+    category: '',
+  });
+
   const handleLogin = () => {
     console.log('Login attempt:', { email, password });
     
@@ -171,12 +228,14 @@ const AdminPanel: React.FC = () => {
   const handleApprove = (id: number, type: string) => {
     console.log(`Approving ${type} with ID: ${id}`);
     setPendingItems(prev => prev.filter(item => item.id !== id));
+    setDashboardData(prev => ({ ...prev, pendingApprovals: prev.pendingApprovals - 1 }));
     Alert.alert('Approved', `${type} has been approved successfully!`);
   };
 
   const handleReject = (id: number, type: string) => {
     console.log(`Rejecting ${type} with ID: ${id}`);
     setPendingItems(prev => prev.filter(item => item.id !== id));
+    setDashboardData(prev => ({ ...prev, pendingApprovals: prev.pendingApprovals - 1 }));
     Alert.alert('Rejected', `${type} has been rejected.`);
   };
 
@@ -187,9 +246,82 @@ const AdminPanel: React.FC = () => {
     Alert.alert('Logged Out', 'You have been logged out successfully.');
   };
 
-  const openModal = (type: 'users' | 'vendors' | 'products' | 'analytics') => {
+  const openModal = (type: 'users' | 'vendors' | 'products' | 'analytics' | 'addVendor' | 'addProduct' | 'createOffer') => {
+    console.log(`Opening modal: ${type}`);
     setModalType(type);
     setShowModal(true);
+  };
+
+  const handleAddVendor = () => {
+    console.log('Adding new vendor:', newVendor);
+    if (!newVendor.name || !newVendor.mobile || !newVendor.city || !newVendor.services) {
+      Alert.alert('Error', 'Please fill all required fields');
+      return;
+    }
+    
+    const vendor: Vendor = {
+      id: vendors.length + 1,
+      name: newVendor.name,
+      mobile: newVendor.mobile,
+      city: newVendor.city,
+      services: newVendor.services,
+      status: 'active',
+      revenue: 0,
+    };
+    
+    setVendors(prev => [...prev, vendor]);
+    setDashboardData(prev => ({ ...prev, totalVendors: prev.totalVendors + 1 }));
+    setNewVendor({ name: '', mobile: '', city: '', services: '', gst: '', address: '' });
+    setShowModal(false);
+    Alert.alert('Success', 'Vendor added successfully!');
+  };
+
+  const handleAddProduct = () => {
+    console.log('Adding new product:', newProduct);
+    if (!newProduct.name || !newProduct.category || !newProduct.price || !newProduct.vendor) {
+      Alert.alert('Error', 'Please fill all required fields');
+      return;
+    }
+    
+    setDashboardData(prev => ({ ...prev, totalProducts: prev.totalProducts + 1 }));
+    setNewProduct({ name: '', category: '', price: '', vendor: '', description: '' });
+    setShowModal(false);
+    Alert.alert('Success', 'Product added successfully!');
+  };
+
+  const handleCreateOffer = () => {
+    console.log('Creating new offer:', newOffer);
+    if (!newOffer.title || !newOffer.description || !newOffer.discount) {
+      Alert.alert('Error', 'Please fill all required fields');
+      return;
+    }
+    
+    setNewOffer({ title: '', description: '', discount: '', validTill: '', category: '' });
+    setShowModal(false);
+    Alert.alert('Success', 'Offer created successfully!');
+  };
+
+  const handleSystemHealth = () => {
+    console.log('Checking system health');
+    Alert.alert('System Health Check', 'All systems are operational:\n\n✅ API Services: Online\n✅ Database: Connected\n⚠️ Payment Gateway: Warning\n✅ AI Services: Active');
+  };
+
+  const handleExportData = () => {
+    console.log('Exporting data');
+    Alert.alert('Export Data', 'Choose export format:', [
+      { text: 'PDF Report', onPress: () => console.log('Exporting PDF') },
+      { text: 'Excel Sheet', onPress: () => console.log('Exporting Excel') },
+      { text: 'Cancel', style: 'cancel' }
+    ]);
+  };
+
+  const handleContactSupport = () => {
+    console.log('Contacting support');
+    Alert.alert('Contact Support', 'Choose contact method:', [
+      { text: 'Call', onPress: () => Linking.openURL('tel:08883800038') },
+      { text: 'Email', onPress: () => Linking.openURL('mailto:price.ai@gmail.com') },
+      { text: 'Cancel', style: 'cancel' }
+    ]);
   };
 
   if (!isLoggedIn) {
@@ -254,13 +386,20 @@ const AdminPanel: React.FC = () => {
       {/* Header */}
       <LinearGradient colors={['#1e4a72', '#2d5aa0']} style={styles.header}>
         <View style={styles.headerContent}>
-          <View>
-            <Text style={styles.headerTitle}>Master Admin Panel</Text>
-            <Text style={styles.headerSubtitle}>PRICE.AI Control Center</Text>
-          </View>
-          <TouchableOpacity onPress={handleLogout} style={styles.logoutButton}>
-            <Ionicons name="log-out" size={24} color="#FFD700" />
+          <TouchableOpacity onPress={() => router.back()}>
+            <View>
+              <Text style={styles.headerTitle}>Master Admin Panel</Text>
+              <Text style={styles.headerSubtitle}>PRICE.AI Control Center</Text>
+            </View>
           </TouchableOpacity>
+          <View style={styles.headerActions}>
+            <TouchableOpacity onPress={handleContactSupport} style={styles.headerButton}>
+              <Ionicons name="help-circle" size={24} color="#FFD700" />
+            </TouchableOpacity>
+            <TouchableOpacity onPress={handleLogout} style={styles.headerButton}>
+              <Ionicons name="log-out" size={24} color="#FFD700" />
+            </TouchableOpacity>
+          </View>
         </View>
       </LinearGradient>
 
@@ -295,14 +434,14 @@ const AdminPanel: React.FC = () => {
               count={dashboardData.pendingApprovals}
               icon="time"
               color="#FFEAA7"
-              onPress={() => {}}
+              onPress={() => console.log('Showing pending approvals')}
             />
             <AdminCard
               title="Active Bookings"
               count={dashboardData.activeBookings}
               icon="airplane"
               color="#DDA0DD"
-              onPress={() => {}}
+              onPress={() => console.log('Showing active bookings')}
             />
             <AdminCard
               title="Revenue (₹)"
@@ -336,24 +475,36 @@ const AdminPanel: React.FC = () => {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Quick Actions</Text>
           <View style={styles.actionsGrid}>
-            <TouchableOpacity style={[styles.actionCard, { backgroundColor: '#FF6B6B20' }]}>
+            <TouchableOpacity 
+              style={[styles.actionCard, { backgroundColor: '#FF6B6B20' }]}
+              onPress={() => openModal('addVendor')}
+            >
               <Ionicons name="add-circle" size={32} color="#FF6B6B" />
               <Text style={styles.actionTitle}>Add Vendor</Text>
             </TouchableOpacity>
             
-            <TouchableOpacity style={[styles.actionCard, { backgroundColor: '#4ECDC420' }]}>
+            <TouchableOpacity 
+              style={[styles.actionCard, { backgroundColor: '#4ECDC420' }]}
+              onPress={() => openModal('addProduct')}
+            >
               <Ionicons name="cube" size={32} color="#4ECDC4" />
               <Text style={styles.actionTitle}>Add Product</Text>
             </TouchableOpacity>
             
-            <TouchableOpacity style={[styles.actionCard, { backgroundColor: '#96CEB420' }]}>
+            <TouchableOpacity 
+              style={[styles.actionCard, { backgroundColor: '#96CEB420' }]}
+              onPress={() => openModal('createOffer')}
+            >
               <Ionicons name="megaphone" size={32} color="#96CEB4" />
               <Text style={styles.actionTitle}>Create Offer</Text>
             </TouchableOpacity>
             
-            <TouchableOpacity style={[styles.actionCard, { backgroundColor: '#FFEAA720' }]}>
+            <TouchableOpacity 
+              style={[styles.actionCard, { backgroundColor: '#FFEAA720' }]}
+              onPress={handleExportData}
+            >
               <Ionicons name="analytics" size={32} color="#FFEAA7" />
-              <Text style={styles.actionTitle}>View Reports</Text>
+              <Text style={styles.actionTitle}>Export Data</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -361,7 +512,7 @@ const AdminPanel: React.FC = () => {
         {/* System Health */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>System Health</Text>
-          <View style={styles.healthContainer}>
+          <TouchableOpacity style={styles.healthContainer} onPress={handleSystemHealth}>
             <View style={styles.healthItem}>
               <View style={[styles.healthIndicator, { backgroundColor: '#4ECDC4' }]} />
               <Text style={styles.healthText}>API Services: Online</Text>
@@ -378,7 +529,7 @@ const AdminPanel: React.FC = () => {
               <View style={[styles.healthIndicator, { backgroundColor: '#4ECDC4' }]} />
               <Text style={styles.healthText}>AI Services: Active</Text>
             </View>
-          </View>
+          </TouchableOpacity>
         </View>
       </ScrollView>
 
@@ -392,6 +543,9 @@ const AdminPanel: React.FC = () => {
                 {modalType === 'vendors' && 'Vendor Management'}
                 {modalType === 'products' && 'Product Management'}
                 {modalType === 'analytics' && 'Analytics Dashboard'}
+                {modalType === 'addVendor' && 'Add New Vendor'}
+                {modalType === 'addProduct' && 'Add New Product'}
+                {modalType === 'createOffer' && 'Create New Offer'}
               </Text>
               <TouchableOpacity onPress={() => setShowModal(false)}>
                 <Ionicons name="close" size={24} color="#666" />
@@ -402,7 +556,7 @@ const AdminPanel: React.FC = () => {
               {modalType === 'users' && (
                 <View>
                   {users.map((user) => (
-                    <View key={user.id} style={styles.userItem}>
+                    <TouchableOpacity key={user.id} style={styles.userItem} onPress={() => console.log('User details:', user)}>
                       <View style={styles.userInfo}>
                         <Text style={styles.userName}>{user.name}</Text>
                         <Text style={styles.userDetails}>{user.email} • {user.mobile}</Text>
@@ -414,31 +568,186 @@ const AdminPanel: React.FC = () => {
                       ]}>
                         <Text style={styles.statusText}>{user.status}</Text>
                       </View>
-                    </View>
+                    </TouchableOpacity>
                   ))}
+                </View>
+              )}
+
+              {modalType === 'vendors' && (
+                <View>
+                  {vendors.map((vendor) => (
+                    <TouchableOpacity key={vendor.id} style={styles.userItem} onPress={() => console.log('Vendor details:', vendor)}>
+                      <View style={styles.userInfo}>
+                        <Text style={styles.userName}>{vendor.name}</Text>
+                        <Text style={styles.userDetails}>{vendor.mobile} • {vendor.city}</Text>
+                        <Text style={styles.userLocation}>{vendor.services}</Text>
+                        <Text style={styles.userLocation}>Revenue: ₹{vendor.revenue}</Text>
+                      </View>
+                      <View style={[
+                        styles.statusBadge,
+                        { backgroundColor: vendor.status === 'active' ? '#4ECDC4' : '#FFEAA7' }
+                      ]}>
+                        <Text style={styles.statusText}>{vendor.status}</Text>
+                      </View>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              )}
+
+              {modalType === 'addVendor' && (
+                <View>
+                  <TextInput
+                    style={styles.modalInput}
+                    placeholder="Business Name *"
+                    value={newVendor.name}
+                    onChangeText={(text) => setNewVendor({ ...newVendor, name: text })}
+                  />
+                  <TextInput
+                    style={styles.modalInput}
+                    placeholder="Mobile Number *"
+                    value={newVendor.mobile}
+                    onChangeText={(text) => setNewVendor({ ...newVendor, mobile: text })}
+                    keyboardType="phone-pad"
+                  />
+                  <TextInput
+                    style={styles.modalInput}
+                    placeholder="City *"
+                    value={newVendor.city}
+                    onChangeText={(text) => setNewVendor({ ...newVendor, city: text })}
+                  />
+                  <TextInput
+                    style={styles.modalInput}
+                    placeholder="Services/Products *"
+                    value={newVendor.services}
+                    onChangeText={(text) => setNewVendor({ ...newVendor, services: text })}
+                    multiline
+                  />
+                  <TextInput
+                    style={styles.modalInput}
+                    placeholder="GST Number (Optional)"
+                    value={newVendor.gst}
+                    onChangeText={(text) => setNewVendor({ ...newVendor, gst: text })}
+                  />
+                  <TextInput
+                    style={styles.modalInput}
+                    placeholder="Address"
+                    value={newVendor.address}
+                    onChangeText={(text) => setNewVendor({ ...newVendor, address: text })}
+                    multiline
+                  />
+                  <TouchableOpacity style={styles.modalButton} onPress={handleAddVendor}>
+                    <Text style={styles.modalButtonText}>Add Vendor</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+
+              {modalType === 'addProduct' && (
+                <View>
+                  <TextInput
+                    style={styles.modalInput}
+                    placeholder="Product Name *"
+                    value={newProduct.name}
+                    onChangeText={(text) => setNewProduct({ ...newProduct, name: text })}
+                  />
+                  <TextInput
+                    style={styles.modalInput}
+                    placeholder="Category *"
+                    value={newProduct.category}
+                    onChangeText={(text) => setNewProduct({ ...newProduct, category: text })}
+                  />
+                  <TextInput
+                    style={styles.modalInput}
+                    placeholder="Price *"
+                    value={newProduct.price}
+                    onChangeText={(text) => setNewProduct({ ...newProduct, price: text })}
+                    keyboardType="numeric"
+                  />
+                  <TextInput
+                    style={styles.modalInput}
+                    placeholder="Vendor Name *"
+                    value={newProduct.vendor}
+                    onChangeText={(text) => setNewProduct({ ...newProduct, vendor: text })}
+                  />
+                  <TextInput
+                    style={styles.modalInput}
+                    placeholder="Description"
+                    value={newProduct.description}
+                    onChangeText={(text) => setNewProduct({ ...newProduct, description: text })}
+                    multiline
+                  />
+                  <TouchableOpacity style={styles.modalButton} onPress={handleAddProduct}>
+                    <Text style={styles.modalButtonText}>Add Product</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+
+              {modalType === 'createOffer' && (
+                <View>
+                  <TextInput
+                    style={styles.modalInput}
+                    placeholder="Offer Title *"
+                    value={newOffer.title}
+                    onChangeText={(text) => setNewOffer({ ...newOffer, title: text })}
+                  />
+                  <TextInput
+                    style={styles.modalInput}
+                    placeholder="Description *"
+                    value={newOffer.description}
+                    onChangeText={(text) => setNewOffer({ ...newOffer, description: text })}
+                    multiline
+                  />
+                  <TextInput
+                    style={styles.modalInput}
+                    placeholder="Discount Percentage *"
+                    value={newOffer.discount}
+                    onChangeText={(text) => setNewOffer({ ...newOffer, discount: text })}
+                    keyboardType="numeric"
+                  />
+                  <TextInput
+                    style={styles.modalInput}
+                    placeholder="Valid Till (DD/MM/YYYY)"
+                    value={newOffer.validTill}
+                    onChangeText={(text) => setNewOffer({ ...newOffer, validTill: text })}
+                  />
+                  <TextInput
+                    style={styles.modalInput}
+                    placeholder="Category"
+                    value={newOffer.category}
+                    onChangeText={(text) => setNewOffer({ ...newOffer, category: text })}
+                  />
+                  <TouchableOpacity style={styles.modalButton} onPress={handleCreateOffer}>
+                    <Text style={styles.modalButtonText}>Create Offer</Text>
+                  </TouchableOpacity>
                 </View>
               )}
               
               {modalType === 'analytics' && (
                 <View style={styles.analyticsContainer}>
-                  <View style={styles.analyticsCard}>
+                  <TouchableOpacity style={styles.analyticsCard} onPress={() => console.log('Revenue details')}>
                     <Text style={styles.analyticsTitle}>Revenue Trend</Text>
                     <Text style={styles.analyticsValue}>₹1,25,000</Text>
                     <Text style={styles.analyticsChange}>+15% from last month</Text>
-                  </View>
+                  </TouchableOpacity>
                   
-                  <View style={styles.analyticsCard}>
+                  <TouchableOpacity style={styles.analyticsCard} onPress={() => console.log('User growth details')}>
                     <Text style={styles.analyticsTitle}>User Growth</Text>
                     <Text style={styles.analyticsValue}>1,250</Text>
                     <Text style={styles.analyticsChange}>+8% from last month</Text>
-                  </View>
+                  </TouchableOpacity>
                   
-                  <View style={styles.analyticsCard}>
+                  <TouchableOpacity style={styles.analyticsCard} onPress={() => console.log('Category details')}>
                     <Text style={styles.analyticsTitle}>Top Categories</Text>
                     <Text style={styles.analyticsItem}>1. Electronics - 35%</Text>
                     <Text style={styles.analyticsItem}>2. Groceries - 28%</Text>
                     <Text style={styles.analyticsItem}>3. Fashion - 22%</Text>
-                  </View>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity style={styles.analyticsCard} onPress={() => console.log('Regional performance')}>
+                    <Text style={styles.analyticsTitle}>Regional Performance</Text>
+                    <Text style={styles.analyticsItem}>1. Chennai - 40%</Text>
+                    <Text style={styles.analyticsItem}>2. Madurai - 25%</Text>
+                    <Text style={styles.analyticsItem}>3. Coimbatore - 20%</Text>
+                  </TouchableOpacity>
                 </View>
               )}
             </ScrollView>
@@ -549,7 +858,11 @@ const styles = StyleSheet.create({
     color: '#fff',
     marginTop: 2,
   },
-  logoutButton: {
+  headerActions: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  headerButton: {
     padding: 8,
   },
   scrollView: {
@@ -678,14 +991,19 @@ const styles = StyleSheet.create({
     color: '#333',
   },
   healthContainer: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
     gap: 12,
   },
   healthItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
-    padding: 16,
-    borderRadius: 8,
     gap: 12,
   },
   healthIndicator: {
@@ -725,6 +1043,26 @@ const styles = StyleSheet.create({
   },
   modalBody: {
     padding: 20,
+  },
+  modalInput: {
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 16,
+    fontSize: 16,
+  },
+  modalButton: {
+    backgroundColor: '#1e4a72',
+    padding: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  modalButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
   },
   userItem: {
     flexDirection: 'row',

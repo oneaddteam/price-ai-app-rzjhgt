@@ -8,12 +8,15 @@ import {
   Image,
   Dimensions,
   Platform,
+  TextInput,
+  Modal,
+  Alert,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { StatusBar } from 'expo-status-bar';
 import { colors } from '../styles/commonStyles';
-import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
+import { StatusBar } from 'expo-status-bar';
 import { router } from 'expo-router';
 
 const { width, height } = Dimensions.get('window');
@@ -25,16 +28,6 @@ interface FeatureCardProps {
   color: string;
 }
 
-const FeatureCard: React.FC<FeatureCardProps> = ({ icon, title, description, color }) => (
-  <View style={[styles.featureCard, { borderLeftColor: color }]}>
-    <View style={styles.featureHeader}>
-      <Ionicons name={icon} size={24} color={color} />
-      <Text style={styles.featureTitle}>{title}</Text>
-    </View>
-    <Text style={styles.featureDescription}>{description}</Text>
-  </View>
-);
-
 interface ModeCardProps {
   icon: keyof typeof Ionicons.glyphMap;
   title: string;
@@ -42,403 +35,498 @@ interface ModeCardProps {
   color: string;
 }
 
-const ModeCard: React.FC<ModeCardProps> = ({ icon, title, purpose, color }) => (
-  <View style={styles.modeCard}>
-    <View style={[styles.modeIcon, { backgroundColor: color }]}>
-      <Ionicons name={icon} size={28} color={colors.white} />
+interface VendorApplicationProps {
+  name: string;
+  mobile: string;
+  city: string;
+  services: string;
+  gst?: string;
+  address: string;
+}
+
+const FeatureCard: React.FC<FeatureCardProps> = ({ icon, title, description, color }) => (
+  <View style={[styles.featureCard, { borderLeftColor: color }]}>
+    <View style={[styles.iconContainer, { backgroundColor: color + '20' }]}>
+      <Ionicons name={icon} size={24} color={color} />
     </View>
-    <Text style={styles.modeTitle}>{title}</Text>
-    <Text style={styles.modePurpose}>{purpose}</Text>
+    <View style={styles.featureContent}>
+      <Text style={styles.featureTitle}>{title}</Text>
+      <Text style={styles.featureDescription}>{description}</Text>
+    </View>
   </View>
 );
 
+const ModeCard: React.FC<ModeCardProps> = ({ icon, title, purpose, color }) => (
+  <TouchableOpacity style={[styles.modeCard, { backgroundColor: color + '10' }]}>
+    <LinearGradient
+      colors={[color + '20', color + '10']}
+      style={styles.modeGradient}
+    >
+      <Ionicons name={icon} size={32} color={color} />
+      <Text style={[styles.modeTitle, { color }]}>{title}</Text>
+      <Text style={styles.modePurpose}>{purpose}</Text>
+    </LinearGradient>
+  </TouchableOpacity>
+);
+
 const PriceAIWebsite: React.FC = () => {
-  const [isInstallable, setIsInstallable] = useState(false);
+  const [currentSlide, setCurrentSlide] = useState(0);
+  const [showVendorModal, setShowVendorModal] = useState(false);
+  const [showUserModal, setShowUserModal] = useState(false);
+  const [vendorForm, setVendorForm] = useState<VendorApplicationProps>({
+    name: '',
+    mobile: '',
+    city: '',
+    services: '',
+    gst: '',
+    address: '',
+  });
+  const [userForm, setUserForm] = useState({
+    name: '',
+    mobile: '',
+    city: '',
+    pincode: '',
+  });
 
   useEffect(() => {
-    // Check if PWA can be installed
-    if (Platform.OS === 'web') {
-      const handleBeforeInstallPrompt = (e: any) => {
-        e.preventDefault();
-        setIsInstallable(true);
-      };
-      
-      window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-      
-      return () => {
-        window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-      };
-    }
+    const timer = setInterval(() => {
+      setCurrentSlide((prev) => (prev + 1) % 4);
+    }, 5000);
+    return () => clearInterval(timer);
   }, []);
 
   const handleInstallApp = () => {
-    console.log('Install app clicked');
-    // PWA installation logic would go here
+    if (Platform.OS === 'web') {
+      // PWA install prompt
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/sw.js');
+      }
+      Alert.alert('Install PRICE.AI', 'Add to home screen for better experience!');
+    }
   };
 
   const handleDownloadApp = () => {
-    console.log('Download app clicked');
-    // App store redirect logic would go here
+    Alert.alert('Download PRICE.AI', 'App will be available on Play Store & App Store soon!');
   };
+
+  const handleVendorApply = async () => {
+    console.log('Vendor Application:', vendorForm);
+    // Here you would typically send to your backend
+    Alert.alert('Application Submitted!', 'We will review your application and get back to you within 24 hours.');
+    setShowVendorModal(false);
+    setVendorForm({
+      name: '',
+      mobile: '',
+      city: '',
+      services: '',
+      gst: '',
+      address: '',
+    });
+  };
+
+  const handleUserApply = async () => {
+    console.log('User Registration:', userForm);
+    Alert.alert('Registration Successful!', 'Welcome to PRICE.AI! You can now start using our services.');
+    setShowUserModal(false);
+    setUserForm({
+      name: '',
+      mobile: '',
+      city: '',
+      pincode: '',
+    });
+  };
+
+  const slides = [
+    {
+      title: 'விலை தெரிந்து வாங்குவது வீரம்!',
+      subtitle: 'Know the price. Own your power.',
+      image: 'https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=400',
+    },
+    {
+      title: 'Save ₹1,000+ Monthly',
+      subtitle: 'Smart AI-powered price comparison',
+      image: 'https://images.unsplash.com/photo-1563013544-824ae1b704d3?w=400',
+    },
+    {
+      title: 'All Languages Supported',
+      subtitle: 'Tamil, Hindi, Telugu, Malayalam & more',
+      image: 'https://images.unsplash.com/photo-1434030216411-0b793f4b4173?w=400',
+    },
+    {
+      title: 'Book Everything',
+      subtitle: 'Train, Bus, Hotel, Cinema & more',
+      image: 'https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=400',
+    },
+  ];
+
+  const features = [
+    {
+      icon: 'search' as keyof typeof Ionicons.glyphMap,
+      title: 'Smart Price Search',
+      description: 'Find best prices across local & online stores instantly',
+      color: '#FF6B6B',
+    },
+    {
+      icon: 'analytics' as keyof typeof Ionicons.glyphMap,
+      title: 'AI Budget Planner',
+      description: 'Track expenses & get personalized saving tips',
+      color: '#4ECDC4',
+    },
+    {
+      icon: 'refresh' as keyof typeof Ionicons.glyphMap,
+      title: 'Routine Automation',
+      description: 'Auto-order milk, groceries, medicines',
+      color: '#45B7D1',
+    },
+    {
+      icon: 'bulb' as keyof typeof Ionicons.glyphMap,
+      title: 'Smart Suggestions',
+      description: 'AI recommends best deals & timing',
+      color: '#96CEB4',
+    },
+    {
+      icon: 'card' as keyof typeof Ionicons.glyphMap,
+      title: 'Finance Assistant',
+      description: 'Loans, insurance, investment planning',
+      color: '#FFEAA7',
+    },
+    {
+      icon: 'airplane' as keyof typeof Ionicons.glyphMap,
+      title: 'Travel Booking',
+      description: 'Book trains, buses, hotels, cinema tickets',
+      color: '#DDA0DD',
+    },
+  ];
+
+  const modes = [
+    {
+      icon: 'search' as keyof typeof Ionicons.glyphMap,
+      title: 'Search Mode',
+      purpose: 'Area-wise product/service price search',
+      color: '#FF6B6B',
+    },
+    {
+      icon: 'trending-up' as keyof typeof Ionicons.glyphMap,
+      title: 'Budget Mode',
+      purpose: 'Expense tracking, AI savings tips',
+      color: '#4ECDC4',
+    },
+    {
+      icon: 'refresh-circle' as keyof typeof Ionicons.glyphMap,
+      title: 'Routine Mode',
+      purpose: 'Auto booking of repeated needs',
+      color: '#45B7D1',
+    },
+    {
+      icon: 'bulb' as keyof typeof Ionicons.glyphMap,
+      title: 'Suggest Mode',
+      purpose: 'AI recommends best buy options',
+      color: '#96CEB4',
+    },
+    {
+      icon: 'calculator' as keyof typeof Ionicons.glyphMap,
+      title: 'Finance AI',
+      purpose: 'Loans, insurance, financial planner',
+      color: '#FFEAA7',
+    },
+    {
+      icon: 'airplane' as keyof typeof Ionicons.glyphMap,
+      title: 'Booking Mode',
+      purpose: 'Tickets, hotels, cinema, travel',
+      color: '#DDA0DD',
+    },
+  ];
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar style="light" backgroundColor={colors.priceBlue} />
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-        
-        {/* Hero Section */}
-        <LinearGradient
-          colors={[colors.priceBlue, '#2a5a8a']}
-          style={styles.heroSection}
-        >
-          <View style={styles.heroContent}>
-            <Text style={styles.heroTitle}>PRICE.AI</Text>
-            <Text style={styles.heroSubtitle}>
-              Pan India AI-Powered Smart Pricing & Lifestyle Assistant
-            </Text>
-            <Text style={styles.heroTagline}>
-              "விலை தெரிந்து வாங்குவது வீரம்!"
-            </Text>
-            
-            {/* Hero Image Placeholder */}
-            <View style={styles.heroImageContainer}>
-              <View style={styles.phoneFrame}>
-                <View style={styles.phoneScreen}>
-                  <Ionicons name="search" size={40} color={colors.priceBlue} />
-                  <Text style={styles.phoneText}>Search Tomato</Text>
-                  <View style={styles.priceComparison}>
-                    <Text style={styles.priceText}>Store A: ₹40/kg</Text>
-                    <Text style={styles.priceText}>Store B: ₹35/kg</Text>
-                    <Text style={[styles.priceText, { color: colors.priceGreen }]}>
-                      Store C: ₹30/kg ✓
-                    </Text>
-                  </View>
-                </View>
-              </View>
-              
-              {/* Man with phone illustration placeholder */}
-              <View style={styles.manIllustration}>
-                <View style={styles.manFace}>
-                  <Ionicons name="person" size={60} color={colors.priceYellow} />
-                </View>
-                <View style={styles.speechBubble}>
-                  <Text style={styles.speechText}>Know the price. Feel NICE!</Text>
-                </View>
-              </View>
-            </View>
-
-            <TouchableOpacity style={styles.ctaButton} onPress={handleDownloadApp}>
-              <Text style={styles.ctaButtonText}>Download Now</Text>
-              <Ionicons name="download" size={20} color={colors.white} />
-            </TouchableOpacity>
-            
-            <Text style={styles.languageText}>
-              Available in Tamil | Hindi | English
-            </Text>
+      <StatusBar style="light" backgroundColor="#1e4a72" />
+      
+      {/* Header */}
+      <LinearGradient colors={['#1e4a72', '#2d5aa0']} style={styles.header}>
+        <View style={styles.headerContent}>
+          <View style={styles.logoContainer}>
+            <Ionicons name="pricetag" size={32} color="#FFD700" />
+            <Text style={styles.logoText}>PRICE.AI</Text>
           </View>
-        </LinearGradient>
+          <TouchableOpacity onPress={() => router.push('/admin')} style={styles.adminButton}>
+            <Ionicons name="settings" size={24} color="#FFD700" />
+          </TouchableOpacity>
+        </View>
+      </LinearGradient>
+
+      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+        {/* Hero Carousel */}
+        <View style={styles.heroSection}>
+          <View style={styles.carousel}>
+            <Image
+              source={{ uri: slides[currentSlide].image }}
+              style={styles.heroImage}
+              resizeMode="cover"
+            />
+            <LinearGradient
+              colors={['transparent', 'rgba(0,0,0,0.7)']}
+              style={styles.heroOverlay}
+            >
+              <Text style={styles.heroTitle}>{slides[currentSlide].title}</Text>
+              <Text style={styles.heroSubtitle}>{slides[currentSlide].subtitle}</Text>
+              <View style={styles.heroButtons}>
+                <TouchableOpacity style={styles.primaryButton} onPress={handleInstallApp}>
+                  <Ionicons name="download" size={20} color="#fff" />
+                  <Text style={styles.buttonText}>Install App</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.secondaryButton} onPress={() => setShowUserModal(true)}>
+                  <Ionicons name="person-add" size={20} color="#1e4a72" />
+                  <Text style={styles.secondaryButtonText}>Join Now</Text>
+                </TouchableOpacity>
+              </View>
+            </LinearGradient>
+          </View>
+          
+          {/* Slide Indicators */}
+          <View style={styles.indicators}>
+            {slides.map((_, index) => (
+              <View
+                key={index}
+                style={[
+                  styles.indicator,
+                  { backgroundColor: index === currentSlide ? '#FFD700' : '#ccc' }
+                ]}
+              />
+            ))}
+          </View>
+        </View>
 
         {/* Problem Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>The Everyday Consumer Struggles</Text>
-          <View style={styles.problemList}>
+          <Text style={styles.sectionTitle}>The Problem We Solve</Text>
+          <View style={styles.problemContainer}>
             <View style={styles.problemItem}>
-              <Ionicons name="close-circle" size={20} color="#ff4444" />
-              <Text style={styles.problemText}>Inconsistent local prices for essentials</Text>
+              <Ionicons name="alert-circle" size={24} color="#FF6B6B" />
+              <Text style={styles.problemText}>Inconsistent local prices</Text>
             </View>
             <View style={styles.problemItem}>
-              <Ionicons name="close-circle" size={20} color="#ff4444" />
-              <Text style={styles.problemText}>No trusted source to compare deals</Text>
+              <Ionicons name="help-circle" size={24} color="#FF6B6B" />
+              <Text style={styles.problemText}>No trusted price comparison</Text>
             </View>
             <View style={styles.problemItem}>
-              <Ionicons name="close-circle" size={20} color="#ff4444" />
-              <Text style={styles.problemText}>Language and tech barriers</Text>
+              <Ionicons name="language" size={24} color="#FF6B6B" />
+              <Text style={styles.problemText}>Language barriers</Text>
             </View>
             <View style={styles.problemItem}>
-              <Ionicons name="close-circle" size={20} color="#ff4444" />
-              <Text style={styles.problemText}>Overpaying due to lack of real-time info</Text>
+              <Ionicons name="cash" size={24} color="#FF6B6B" />
+              <Text style={styles.problemText}>Overpaying due to lack of info</Text>
             </View>
           </View>
         </View>
 
-        {/* Solution Section */}
-        <LinearGradient
-          colors={[colors.lightGray, colors.white]}
-          style={styles.section}
-        >
-          <Text style={[styles.sectionTitle, { color: colors.darkGray }]}>
-            PRICE.AI - One App for All Smart Spending
-          </Text>
-          <View style={styles.solutionGrid}>
-            <FeatureCard
-              icon="search"
-              title="Smart Search"
-              description="One-click product & price search by area or pincode"
-              color={colors.priceBlue}
-            />
-            <FeatureCard
-              icon="bulb"
-              title="AI Suggestions"
-              description="AI-powered deal suggestions with reasons"
-              color={colors.priceYellow}
-            />
-            <FeatureCard
-              icon="calendar"
-              title="Budget Planning"
-              description="Daily & monthly budget planning with AI tips"
-              color={colors.priceGreen}
-            />
-            <FeatureCard
-              icon="refresh"
-              title="Auto Ordering"
-              description="Routine ordering automation (milk, groceries, meds)"
-              color="#9C27B0"
-            />
+        {/* Features Section */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Powerful Features</Text>
+          <View style={styles.featuresGrid}>
+            {features.map((feature, index) => (
+              <FeatureCard key={index} {...feature} />
+            ))}
           </View>
-        </LinearGradient>
+        </View>
 
-        {/* Core Features / Modes */}
+        {/* Modes Section */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>6 Powerful Modes</Text>
           <View style={styles.modesGrid}>
-            <ModeCard
-              icon="search"
-              title="Search Mode"
-              purpose="Area-wise product/service price search"
-              color={colors.priceBlue}
-            />
-            <ModeCard
-              icon="trending-up"
-              title="Budget Mode"
-              purpose="Expense tracking, AI savings tips"
-              color={colors.priceGreen}
-            />
-            <ModeCard
-              icon="refresh-circle"
-              title="Routine Mode"
-              purpose="Auto booking of repeated needs"
-              color="#FF9800"
-            />
-            <ModeCard
-              icon="bulb"
-              title="Suggest Mode"
-              purpose="AI recommends best buy options"
-              color="#9C27B0"
-            />
-            <ModeCard
-              icon="card"
-              title="Finance AI"
-              purpose="Loans, insurance, financial planner"
-              color="#4CAF50"
-            />
-            <ModeCard
-              icon="airplane"
-              title="Booking Mode"
-              purpose="Tickets, hotels, cinema, travel"
-              color="#2196F3"
-            />
+            {modes.map((mode, index) => (
+              <ModeCard key={index} {...mode} />
+            ))}
           </View>
         </View>
 
         {/* Value Proposition */}
-        <LinearGradient
-          colors={[colors.priceGreen, '#66BB6A']}
-          style={styles.section}
-        >
-          <Text style={[styles.sectionTitle, { color: colors.white }]}>
-            Why India Needs PRICE.AI Now
-          </Text>
-          <View style={styles.valueList}>
+        <View style={[styles.section, { backgroundColor: '#f8f9fa' }]}>
+          <Text style={styles.sectionTitle}>Why India Needs PRICE.AI</Text>
+          <View style={styles.valueGrid}>
             <View style={styles.valueItem}>
-              <Ionicons name="checkmark-circle" size={24} color={colors.white} />
-              <Text style={styles.valueText}>Save up to ₹1,000/month on daily shopping</Text>
+              <Ionicons name="trending-down" size={32} color="#4ECDC4" />
+              <Text style={styles.valueTitle}>Save ₹1,000+/month</Text>
+              <Text style={styles.valueText}>On daily shopping</Text>
             </View>
             <View style={styles.valueItem}>
-              <Ionicons name="checkmark-circle" size={24} color={colors.white} />
-              <Text style={styles.valueText}>Get true pricing from local & online platforms</Text>
+              <Ionicons name="shield-checkmark" size={32} color="#96CEB4" />
+              <Text style={styles.valueTitle}>True Pricing</Text>
+              <Text style={styles.valueText}>From local & online</Text>
             </View>
             <View style={styles.valueItem}>
-              <Ionicons name="checkmark-circle" size={24} color={colors.white} />
-              <Text style={styles.valueText}>Available in all major Indian languages</Text>
+              <Ionicons name="language" size={32} color="#FFEAA7" />
+              <Text style={styles.valueTitle}>All Languages</Text>
+              <Text style={styles.valueText}>Tamil, Hindi & more</Text>
             </View>
             <View style={styles.valueItem}>
-              <Ionicons name="checkmark-circle" size={24} color={colors.white} />
-              <Text style={styles.valueText}>Elderly friendly: voice + photo input</Text>
-            </View>
-            <View style={styles.valueItem}>
-              <Ionicons name="checkmark-circle" size={24} color={colors.white} />
-              <Text style={styles.valueText}>Protects from fake offers and mispricing</Text>
-            </View>
-          </View>
-        </LinearGradient>
-
-        {/* Monetization Strategy */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Revenue Model - Multiple Streams</Text>
-          <View style={styles.revenueGrid}>
-            <View style={styles.revenueCard}>
-              <Ionicons name="storefront" size={30} color={colors.priceBlue} />
-              <Text style={styles.revenueTitle}>Vendor Listing</Text>
-              <Text style={styles.revenueAmount}>₹499/month</Text>
-            </View>
-            <View style={styles.revenueCard}>
-              <Ionicons name="link" size={30} color={colors.priceGreen} />
-              <Text style={styles.revenueTitle}>Affiliate Commissions</Text>
-              <Text style={styles.revenueAmount}>Amazon, Flipkart</Text>
-            </View>
-            <View style={styles.revenueCard}>
-              <Ionicons name="ticket" size={30} color={colors.priceYellow} />
-              <Text style={styles.revenueTitle}>Booking Margin</Text>
-              <Text style={styles.revenueAmount}>Travel & Entertainment</Text>
-            </View>
-            <View style={styles.revenueCard}>
-              <Ionicons name="star" size={30} color="#9C27B0" />
-              <Text style={styles.revenueTitle}>Premium Subscription</Text>
-              <Text style={styles.revenueAmount}>₹99/month</Text>
+              <Ionicons name="heart" size={32} color="#DDA0DD" />
+              <Text style={styles.valueTitle}>Elderly Friendly</Text>
+              <Text style={styles.valueText}>Voice + photo input</Text>
             </View>
           </View>
         </View>
 
-        {/* Expansion Roadmap */}
-        <LinearGradient
-          colors={[colors.priceBlue, '#2a5a8a']}
-          style={styles.section}
-        >
-          <Text style={[styles.sectionTitle, { color: colors.white }]}>
-            Vision for The Year
-          </Text>
-          <View style={styles.roadmapContainer}>
-            <View style={styles.roadmapPhase}>
-              <View style={styles.phaseNumber}>
-                <Text style={styles.phaseNumberText}>1</Text>
-              </View>
-              <Text style={styles.phaseTitle}>Foundation & Launch</Text>
-              <Text style={styles.phaseDescription}>
-                Tamil Nadu, Kerala, Karnataka go-live with basic AI features
-              </Text>
-            </View>
-            <View style={styles.roadmapPhase}>
-              <View style={styles.phaseNumber}>
-                <Text style={styles.phaseNumberText}>2</Text>
-              </View>
-              <Text style={styles.phaseTitle}>Scale & Diversify</Text>
-              <Text style={styles.phaseDescription}>
-                Tier-2 & Tier-3 city expansion with multilingual support
-              </Text>
-            </View>
-            <View style={styles.roadmapPhase}>
-              <View style={styles.phaseNumber}>
-                <Text style={styles.phaseNumberText}>3</Text>
-              </View>
-              <Text style={styles.phaseTitle}>Nationwide Adoption</Text>
-              <Text style={styles.phaseDescription}>
-                10 Million+ users with full banking and payment integration
-              </Text>
-            </View>
-          </View>
-        </LinearGradient>
-
-        {/* Social Impact */}
+        {/* Join Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Not Just Tech – It&apos;s a Movement</Text>
-          <View style={styles.impactGrid}>
-            <View style={styles.impactCard}>
-              <Ionicons name="people" size={40} color={colors.priceGreen} />
-              <Text style={styles.impactText}>Supports savings for middle-class families</Text>
-            </View>
-            <View style={styles.impactCard}>
-              <Ionicons name="school" size={40} color={colors.priceBlue} />
-              <Text style={styles.impactText}>Increases digital literacy & price awareness</Text>
-            </View>
-            <View style={styles.impactCard}>
-              <Ionicons name="business" size={40} color={colors.priceYellow} />
-              <Text style={styles.impactText}>Encourages small vendor digitization</Text>
-            </View>
-            <View style={styles.impactCard}>
-              <Ionicons name="shield-checkmark" size={40} color="#9C27B0" />
-              <Text style={styles.impactText}>Promotes financial responsibility</Text>
-            </View>
+          <Text style={styles.sectionTitle}>Join the Revolution</Text>
+          <View style={styles.joinContainer}>
+            <TouchableOpacity
+              style={[styles.joinCard, { backgroundColor: '#FF6B6B20' }]}
+              onPress={() => setShowVendorModal(true)}
+            >
+              <Ionicons name="storefront" size={48} color="#FF6B6B" />
+              <Text style={styles.joinTitle}>Become a Vendor</Text>
+              <Text style={styles.joinText}>List your products & reach more customers</Text>
+              <Text style={styles.joinPrice}>₹499/month</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity
+              style={[styles.joinCard, { backgroundColor: '#4ECDC420' }]}
+              onPress={() => setShowUserModal(true)}
+            >
+              <Ionicons name="person" size={48} color="#4ECDC4" />
+              <Text style={styles.joinTitle}>Join as User</Text>
+              <Text style={styles.joinText}>Start saving money with smart shopping</Text>
+              <Text style={styles.joinPrice}>Free to start</Text>
+            </TouchableOpacity>
           </View>
         </View>
-
-        {/* Investment Ask */}
-        <LinearGradient
-          colors={[colors.priceYellow, '#FFD54F']}
-          style={styles.section}
-        >
-          <Text style={[styles.sectionTitle, { color: colors.darkGray }]}>
-            Join Us in Building PRICE.AI
-          </Text>
-          <View style={styles.investmentContainer}>
-            <Text style={styles.investmentAmount}>₹3.5 Crores Seed Round</Text>
-            <View style={styles.fundUsage}>
-              <View style={styles.usageItem}>
-                <View style={[styles.usageBar, { width: '30%', backgroundColor: colors.priceBlue }]} />
-                <Text style={styles.usageText}>AI & App Development: 30%</Text>
-              </View>
-              <View style={styles.usageItem}>
-                <View style={[styles.usageBar, { width: '25%', backgroundColor: colors.priceGreen }]} />
-                <Text style={styles.usageText}>Regional Marketing: 25%</Text>
-              </View>
-              <View style={styles.usageItem}>
-                <View style={[styles.usageBar, { width: '15%', backgroundColor: '#FF9800' }]} />
-                <Text style={styles.usageText}>Vendor Onboarding: 15%</Text>
-              </View>
-              <View style={styles.usageItem}>
-                <View style={[styles.usageBar, { width: '30%', backgroundColor: '#9C27B0' }]} />
-                <Text style={styles.usageText}>Infrastructure & Team: 30%</Text>
-              </View>
-            </View>
-          </View>
-        </LinearGradient>
 
         {/* Contact Section */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Let&apos;s Make India Smarter</Text>
-          <View style={styles.contactContainer}>
+        <LinearGradient colors={['#1e4a72', '#2d5aa0']} style={styles.contactSection}>
+          <Text style={styles.contactTitle}>Ready to Transform Your Shopping?</Text>
+          <Text style={styles.contactSubtitle}>
+            "Know the price. Own your power. PRICE.AI is not just an app. It's a revolution in your palm."
+          </Text>
+          
+          <View style={styles.contactInfo}>
             <View style={styles.contactItem}>
-              <Ionicons name="call" size={24} color={colors.priceBlue} />
+              <Ionicons name="call" size={20} color="#FFD700" />
               <Text style={styles.contactText}>08883800038</Text>
             </View>
             <View style={styles.contactItem}>
-              <Ionicons name="mail" size={24} color={colors.priceBlue} />
+              <Ionicons name="mail" size={20} color="#FFD700" />
               <Text style={styles.contactText}>price.ai@gmail.com</Text>
             </View>
             <View style={styles.contactItem}>
-              <Ionicons name="globe" size={24} color={colors.priceBlue} />
-              <Text style={styles.contactText}>www.price.ai</Text>
-            </View>
-            <View style={styles.contactItem}>
-              <Ionicons name="location" size={24} color={colors.priceBlue} />
-              <Text style={styles.contactText}>Madurai, Tamil Nadu, India</Text>
+              <Ionicons name="location" size={20} color="#FFD700" />
+              <Text style={styles.contactText}>Madurai, Tamil Nadu</Text>
             </View>
           </View>
           
-          <View style={styles.finalQuote}>
-            <Text style={styles.quoteText}>
-              "Know the price. Own your power. PRICE.AI is not just an app. It&apos;s a revolution in your palm."
-            </Text>
+          <TouchableOpacity style={styles.ctaButton} onPress={handleDownloadApp}>
+            <Text style={styles.ctaButtonText}>Download PRICE.AI Now</Text>
+            <Ionicons name="arrow-forward" size={20} color="#1e4a72" />
+          </TouchableOpacity>
+        </LinearGradient>
+      </ScrollView>
+
+      {/* Vendor Application Modal */}
+      <Modal visible={showVendorModal} animationType="slide" transparent>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Vendor Application</Text>
+              <TouchableOpacity onPress={() => setShowVendorModal(false)}>
+                <Ionicons name="close" size={24} color="#666" />
+              </TouchableOpacity>
+            </View>
+            
+            <ScrollView style={styles.modalForm}>
+              <TextInput
+                style={styles.input}
+                placeholder="Business Name"
+                value={vendorForm.name}
+                onChangeText={(text) => setVendorForm({ ...vendorForm, name: text })}
+              />
+              <TextInput
+                style={styles.input}
+                placeholder="Mobile Number"
+                value={vendorForm.mobile}
+                onChangeText={(text) => setVendorForm({ ...vendorForm, mobile: text })}
+                keyboardType="phone-pad"
+              />
+              <TextInput
+                style={styles.input}
+                placeholder="City"
+                value={vendorForm.city}
+                onChangeText={(text) => setVendorForm({ ...vendorForm, city: text })}
+              />
+              <TextInput
+                style={styles.input}
+                placeholder="Services/Products"
+                value={vendorForm.services}
+                onChangeText={(text) => setVendorForm({ ...vendorForm, services: text })}
+                multiline
+              />
+              <TextInput
+                style={styles.input}
+                placeholder="GST Number (Optional)"
+                value={vendorForm.gst}
+                onChangeText={(text) => setVendorForm({ ...vendorForm, gst: text })}
+              />
+              <TextInput
+                style={styles.input}
+                placeholder="Address"
+                value={vendorForm.address}
+                onChangeText={(text) => setVendorForm({ ...vendorForm, address: text })}
+                multiline
+              />
+              
+              <TouchableOpacity style={styles.submitButton} onPress={handleVendorApply}>
+                <Text style={styles.submitButtonText}>Submit Application</Text>
+              </TouchableOpacity>
+            </ScrollView>
           </View>
         </View>
+      </Modal>
 
-        {/* Admin Access */}
-        <View style={styles.adminSection}>
-          <TouchableOpacity 
-            style={styles.adminButton}
-            onPress={() => router.push('/admin')}
-          >
-            <Ionicons name="shield-checkmark" size={20} color={colors.white} />
-            <Text style={styles.adminButtonText}>Admin Panel</Text>
-          </TouchableOpacity>
+      {/* User Registration Modal */}
+      <Modal visible={showUserModal} animationType="slide" transparent>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Join PRICE.AI</Text>
+              <TouchableOpacity onPress={() => setShowUserModal(false)}>
+                <Ionicons name="close" size={24} color="#666" />
+              </TouchableOpacity>
+            </View>
+            
+            <ScrollView style={styles.modalForm}>
+              <TextInput
+                style={styles.input}
+                placeholder="Full Name"
+                value={userForm.name}
+                onChangeText={(text) => setUserForm({ ...userForm, name: text })}
+              />
+              <TextInput
+                style={styles.input}
+                placeholder="Mobile Number"
+                value={userForm.mobile}
+                onChangeText={(text) => setUserForm({ ...userForm, mobile: text })}
+                keyboardType="phone-pad"
+              />
+              <TextInput
+                style={styles.input}
+                placeholder="City"
+                value={userForm.city}
+                onChangeText={(text) => setUserForm({ ...userForm, city: text })}
+              />
+              <TextInput
+                style={styles.input}
+                placeholder="Pincode"
+                value={userForm.pincode}
+                onChangeText={(text) => setUserForm({ ...userForm, pincode: text })}
+                keyboardType="numeric"
+              />
+              
+              <TouchableOpacity style={styles.submitButton} onPress={handleUserApply}>
+                <Text style={styles.submitButtonText}>Join PRICE.AI</Text>
+              </TouchableOpacity>
+            </ScrollView>
+          </View>
         </View>
-
-        {/* Footer */}
-        <View style={styles.footer}>
-          <Text style={styles.footerText}>© 2024 PRICE.AI - ONE ADD TEAM</Text>
-          <Text style={styles.footerText}>The smart shopper&apos;s assistant!</Text>
-        </View>
-
-      </ScrollView>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -446,206 +534,217 @@ const PriceAIWebsite: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.white,
+    backgroundColor: '#fff',
+  },
+  header: {
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+  },
+  headerContent: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  logoContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  logoText: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#FFD700',
+    marginLeft: 8,
+  },
+  adminButton: {
+    padding: 8,
   },
   scrollView: {
     flex: 1,
   },
-  
-  // Hero Section
   heroSection: {
-    paddingVertical: 60,
-    paddingHorizontal: 20,
-    alignItems: 'center',
+    height: height * 0.5,
+    position: 'relative',
   },
-  heroContent: {
-    alignItems: 'center',
-    maxWidth: 800,
+  carousel: {
+    flex: 1,
+    position: 'relative',
+  },
+  heroImage: {
+    width: '100%',
+    height: '100%',
+  },
+  heroOverlay: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    padding: 20,
+    justifyContent: 'flex-end',
   },
   heroTitle: {
-    fontSize: 48,
-    fontWeight: 'bold',
-    color: colors.white,
-    textAlign: 'center',
-    marginBottom: 10,
-  },
-  heroSubtitle: {
-    fontSize: 18,
-    color: colors.white,
-    textAlign: 'center',
-    marginBottom: 15,
-    opacity: 0.9,
-  },
-  heroTagline: {
-    fontSize: 16,
-    color: colors.priceYellow,
-    textAlign: 'center',
-    fontStyle: 'italic',
-    marginBottom: 30,
-  },
-  heroImageContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-around',
-    width: '100%',
-    marginBottom: 30,
-    flexWrap: 'wrap',
-  },
-  phoneFrame: {
-    width: 180,
-    height: 320,
-    backgroundColor: colors.darkGray,
-    borderRadius: 20,
-    padding: 10,
-    marginBottom: 20,
-  },
-  phoneScreen: {
-    flex: 1,
-    backgroundColor: colors.white,
-    borderRadius: 15,
-    padding: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  phoneText: {
-    fontSize: 16,
-    color: colors.darkGray,
-    marginVertical: 10,
-  },
-  priceComparison: {
-    marginTop: 20,
-    alignItems: 'center',
-  },
-  priceText: {
-    fontSize: 14,
-    color: colors.darkGray,
-    marginVertical: 2,
-  },
-  manIllustration: {
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  manFace: {
-    width: 80,
-    height: 80,
-    backgroundColor: colors.priceYellow,
-    borderRadius: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 10,
-  },
-  speechBubble: {
-    backgroundColor: colors.white,
-    padding: 10,
-    borderRadius: 15,
-    maxWidth: 150,
-  },
-  speechText: {
-    fontSize: 12,
-    color: colors.darkGray,
-    textAlign: 'center',
-  },
-  ctaButton: {
-    backgroundColor: colors.priceYellow,
-    paddingHorizontal: 30,
-    paddingVertical: 15,
-    borderRadius: 25,
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 15,
-  },
-  ctaButtonText: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: colors.darkGray,
-    marginRight: 10,
-  },
-  languageText: {
-    fontSize: 14,
-    color: colors.white,
-    opacity: 0.8,
-  },
-
-  // Common Section Styles
-  section: {
-    paddingVertical: 40,
-    paddingHorizontal: 20,
-    alignItems: 'center',
-  },
-  sectionTitle: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: colors.darkGray,
+    color: '#fff',
+    marginBottom: 8,
     textAlign: 'center',
-    marginBottom: 30,
   },
-
-  // Problem Section
-  problemList: {
-    width: '100%',
-    maxWidth: 600,
+  heroSubtitle: {
+    fontSize: 16,
+    color: '#fff',
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  heroButtons: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 12,
+  },
+  primaryButton: {
+    backgroundColor: '#FF6B6B',
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 25,
+    gap: 8,
+  },
+  secondaryButton: {
+    backgroundColor: '#fff',
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 25,
+    gap: 8,
+  },
+  buttonText: {
+    color: '#fff',
+    fontWeight: '600',
+  },
+  secondaryButtonText: {
+    color: '#1e4a72',
+    fontWeight: '600',
+  },
+  indicators: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    paddingVertical: 16,
+    gap: 8,
+  },
+  indicator: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  section: {
+    padding: 20,
+  },
+  sectionTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#1e4a72',
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  problemContainer: {
+    gap: 16,
   },
   problemItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 15,
-    paddingHorizontal: 10,
+    backgroundColor: '#fff',
+    padding: 16,
+    borderRadius: 12,
+    gap: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   problemText: {
     fontSize: 16,
-    color: colors.darkGray,
-    marginLeft: 15,
+    color: '#333',
     flex: 1,
   },
-
-  // Solution Section
-  solutionGrid: {
-    width: '100%',
-    maxWidth: 800,
+  featuresGrid: {
+    gap: 16,
   },
   featureCard: {
-    backgroundColor: colors.white,
-    borderRadius: 10,
-    padding: 20,
-    marginBottom: 15,
+    flexDirection: 'row',
+    backgroundColor: '#fff',
+    padding: 16,
+    borderRadius: 12,
     borderLeftWidth: 4,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
+    gap: 16,
   },
-  featureHeader: {
-    flexDirection: 'row',
+  iconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 10,
+  },
+  featureContent: {
+    flex: 1,
   },
   featureTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: colors.darkGray,
-    marginLeft: 10,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 4,
   },
   featureDescription: {
     fontSize: 14,
-    color: colors.darkGray,
-    opacity: 0.8,
+    color: '#666',
+    lineHeight: 20,
   },
-
-  // Modes Section
   modesGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
+    gap: 16,
     justifyContent: 'space-between',
-    width: '100%',
-    maxWidth: 800,
   },
   modeCard: {
-    width: width > 600 ? '48%' : '100%',
-    backgroundColor: colors.white,
-    borderRadius: 15,
+    width: (width - 60) / 2,
+    borderRadius: 16,
+    overflow: 'hidden',
+  },
+  modeGradient: {
     padding: 20,
-    marginBottom: 15,
+    alignItems: 'center',
+    minHeight: 140,
+    justifyContent: 'center',
+  },
+  modeTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginTop: 12,
+    marginBottom: 4,
+    textAlign: 'center',
+  },
+  modePurpose: {
+    fontSize: 12,
+    color: '#666',
+    textAlign: 'center',
+    lineHeight: 16,
+  },
+  valueGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 16,
+    justifyContent: 'space-between',
+  },
+  valueItem: {
+    width: (width - 60) / 2,
+    backgroundColor: '#fff',
+    padding: 20,
+    borderRadius: 16,
     alignItems: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -653,229 +752,139 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
   },
-  modeIcon: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 15,
-  },
-  modeTitle: {
+  valueTitle: {
     fontSize: 16,
-    fontWeight: 'bold',
-    color: colors.darkGray,
-    marginBottom: 5,
+    fontWeight: '600',
+    color: '#333',
+    marginTop: 12,
+    marginBottom: 4,
     textAlign: 'center',
-  },
-  modePurpose: {
-    fontSize: 14,
-    color: colors.darkGray,
-    opacity: 0.8,
-    textAlign: 'center',
-  },
-
-  // Value Section
-  valueList: {
-    width: '100%',
-    maxWidth: 600,
-  },
-  valueItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 15,
-    paddingHorizontal: 10,
   },
   valueText: {
-    fontSize: 16,
-    color: colors.white,
-    marginLeft: 15,
-    flex: 1,
-  },
-
-  // Revenue Section
-  revenueGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    width: '100%',
-    maxWidth: 800,
-  },
-  revenueCard: {
-    width: width > 600 ? '48%' : '100%',
-    backgroundColor: colors.lightGray,
-    borderRadius: 10,
-    padding: 20,
-    marginBottom: 15,
-    alignItems: 'center',
-  },
-  revenueTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: colors.darkGray,
-    marginVertical: 10,
+    fontSize: 12,
+    color: '#666',
     textAlign: 'center',
   },
-  revenueAmount: {
+  joinContainer: {
+    gap: 16,
+  },
+  joinCard: {
+    padding: 24,
+    borderRadius: 16,
+    alignItems: 'center',
+  },
+  joinTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#333',
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  joinText: {
     fontSize: 14,
-    color: colors.darkGray,
-    opacity: 0.8,
+    color: '#666',
     textAlign: 'center',
+    marginBottom: 12,
   },
-
-  // Roadmap Section
-  roadmapContainer: {
-    width: '100%',
-    maxWidth: 600,
-  },
-  roadmapPhase: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    marginBottom: 25,
-  },
-  phaseNumber: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: colors.priceYellow,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 15,
-  },
-  phaseNumberText: {
+  joinPrice: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: colors.darkGray,
+    color: '#FF6B6B',
   },
-  phaseTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: colors.white,
-    marginBottom: 5,
-    flex: 1,
-  },
-  phaseDescription: {
-    fontSize: 14,
-    color: colors.white,
-    opacity: 0.9,
-    flex: 1,
-  },
-
-  // Impact Section
-  impactGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    width: '100%',
-    maxWidth: 800,
-  },
-  impactCard: {
-    width: width > 600 ? '48%' : '100%',
-    backgroundColor: colors.lightGray,
-    borderRadius: 15,
-    padding: 20,
-    marginBottom: 15,
+  contactSection: {
+    padding: 24,
     alignItems: 'center',
   },
-  impactText: {
-    fontSize: 14,
-    color: colors.darkGray,
-    textAlign: 'center',
-    marginTop: 10,
-  },
-
-  // Investment Section
-  investmentContainer: {
-    width: '100%',
-    maxWidth: 600,
-    alignItems: 'center',
-  },
-  investmentAmount: {
-    fontSize: 32,
+  contactTitle: {
+    fontSize: 24,
     fontWeight: 'bold',
-    color: colors.darkGray,
-    marginBottom: 30,
+    color: '#fff',
     textAlign: 'center',
+    marginBottom: 12,
   },
-  fundUsage: {
-    width: '100%',
+  contactSubtitle: {
+    fontSize: 16,
+    color: '#fff',
+    textAlign: 'center',
+    marginBottom: 24,
+    lineHeight: 24,
+    fontStyle: 'italic',
   },
-  usageItem: {
-    marginBottom: 15,
-  },
-  usageBar: {
-    height: 8,
-    borderRadius: 4,
-    marginBottom: 5,
-  },
-  usageText: {
-    fontSize: 14,
-    color: colors.darkGray,
-  },
-
-  // Contact Section
-  contactContainer: {
-    width: '100%',
-    maxWidth: 400,
-    marginBottom: 30,
+  contactInfo: {
+    gap: 12,
+    marginBottom: 24,
   },
   contactItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 15,
-    paddingHorizontal: 10,
+    gap: 8,
   },
   contactText: {
+    color: '#fff',
     fontSize: 16,
-    color: colors.darkGray,
-    marginLeft: 15,
   },
-  finalQuote: {
-    backgroundColor: colors.lightGray,
-    borderRadius: 15,
-    padding: 20,
-    marginTop: 20,
-  },
-  quoteText: {
-    fontSize: 16,
-    color: colors.darkGray,
-    textAlign: 'center',
-    fontStyle: 'italic',
-    lineHeight: 24,
-  },
-
-  // Admin Section
-  adminSection: {
-    backgroundColor: colors.lightGray,
-    paddingVertical: 20,
-    alignItems: 'center',
-  },
-  adminButton: {
-    backgroundColor: colors.darkGray,
+  ctaButton: {
+    backgroundColor: '#FFD700',
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 20,
+    paddingHorizontal: 24,
+    paddingVertical: 16,
+    borderRadius: 30,
+    gap: 8,
   },
-  adminButtonText: {
-    color: colors.white,
-    marginLeft: 8,
-    fontSize: 14,
+  ctaButtonText: {
+    color: '#1e4a72',
+    fontSize: 18,
     fontWeight: 'bold',
   },
-
-  // Footer
-  footer: {
-    backgroundColor: colors.darkGray,
-    paddingVertical: 20,
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
     alignItems: 'center',
   },
-  footerText: {
-    fontSize: 14,
-    color: colors.white,
-    opacity: 0.8,
-    textAlign: 'center',
+  modalContent: {
+    backgroundColor: '#fff',
+    width: width * 0.9,
+    maxHeight: height * 0.8,
+    borderRadius: 16,
+    overflow: 'hidden',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  modalForm: {
+    padding: 20,
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 16,
+    fontSize: 16,
+  },
+  submitButton: {
+    backgroundColor: '#1e4a72',
+    padding: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  submitButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
 

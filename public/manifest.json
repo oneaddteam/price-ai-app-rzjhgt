@@ -1,7 +1,7 @@
 {
   "name": "PRICE.AI - Smart Pricing Assistant",
   "short_name": "PRICE.AI",
-  "description": "Pan India AI-Powered Smart Pricing & Lifestyle Assistant",
+  "description": "Pan India AI-Powered Smart Pricing & Lifestyle Assistant - விலை தெரிந்து வாங்குவது வீரம்!",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#1e4a72",
@@ -13,10 +13,56 @@
       "sizes": "240x240",
       "type": "image/png",
       "purpose": "any maskable"
+    },
+    {
+      "src": "/assets/images/final_quest_240x240.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/assets/images/final_quest_240x240.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
     }
   ],
-  "categories": ["shopping", "finance", "lifestyle"],
+  "categories": ["shopping", "finance", "lifestyle", "business"],
   "lang": "en",
   "scope": "/",
-  "prefer_related_applications": false
+  "prefer_related_applications": false,
+  "screenshots": [
+    {
+      "src": "/assets/images/final_quest_240x240.png",
+      "sizes": "240x240",
+      "type": "image/png",
+      "form_factor": "narrow"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Admin Panel",
+      "short_name": "Admin",
+      "description": "Access PRICE.AI Admin Panel",
+      "url": "/admin",
+      "icons": [
+        {
+          "src": "/assets/images/final_quest_240x240.png",
+          "sizes": "96x96"
+        }
+      ]
+    },
+    {
+      "name": "Price Search",
+      "short_name": "Search",
+      "description": "Search for product prices",
+      "url": "/priceai",
+      "icons": [
+        {
+          "src": "/assets/images/final_quest_240x240.png",
+          "sizes": "96x96"
+        }
+      ]
+    }
+  ]
 }

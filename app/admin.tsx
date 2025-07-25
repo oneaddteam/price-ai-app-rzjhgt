@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -8,13 +8,18 @@ import {
   TextInput,
   Alert,
   Platform,
+  Modal,
+  FlatList,
+  Dimensions,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { StatusBar } from 'expo-status-bar';
 import { colors } from '../styles/commonStyles';
-import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
+import { StatusBar } from 'expo-status-bar';
 import { router } from 'expo-router';
+
+const { width } = Dimensions.get('window');
 
 interface AdminCardProps {
   title: string;
@@ -24,25 +29,48 @@ interface AdminCardProps {
   onPress: () => void;
 }
 
-const AdminCard: React.FC<AdminCardProps> = ({ title, count, icon, color, onPress }) => (
-  <TouchableOpacity style={[styles.adminCard, { borderLeftColor: color }]} onPress={onPress}>
-    <View style={styles.cardHeader}>
-      <Ionicons name={icon} size={24} color={color} />
-      <Text style={styles.cardTitle}>{title}</Text>
-    </View>
-    <Text style={styles.cardCount}>{count.toLocaleString()}</Text>
-  </TouchableOpacity>
-);
-
 interface PendingItemProps {
+  id: number;
   title: string;
   subtitle: string;
-  type: 'vendor' | 'product' | 'offer';
+  type: 'vendor' | 'product' | 'offer' | 'user';
   onApprove: () => void;
   onReject: () => void;
 }
 
-const PendingItem: React.FC<PendingItemProps> = ({ title, subtitle, type, onApprove, onReject }) => (
+interface User {
+  id: number;
+  name: string;
+  email: string;
+  mobile: string;
+  city: string;
+  role: string;
+  status: 'active' | 'pending' | 'rejected';
+  createdAt: string;
+}
+
+interface Product {
+  id: number;
+  name: string;
+  category: string;
+  price: number;
+  vendor: string;
+  status: 'active' | 'pending' | 'rejected';
+}
+
+const AdminCard: React.FC<AdminCardProps> = ({ title, count, icon, color, onPress }) => (
+  <TouchableOpacity style={[styles.adminCard, { borderLeftColor: color }]} onPress={onPress}>
+    <View style={[styles.cardIcon, { backgroundColor: color + '20' }]}>
+      <Ionicons name={icon} size={24} color={color} />
+    </View>
+    <View style={styles.cardContent}>
+      <Text style={styles.cardTitle}>{title}</Text>
+      <Text style={[styles.cardCount, { color }]}>{count}</Text>
+    </View>
+  </TouchableOpacity>
+);
+
+const PendingItem: React.FC<PendingItemProps> = ({ id, title, subtitle, type, onApprove, onReject }) => (
   <View style={styles.pendingItem}>
     <View style={styles.pendingInfo}>
       <Text style={styles.pendingTitle}>{title}</Text>
@@ -51,10 +79,10 @@ const PendingItem: React.FC<PendingItemProps> = ({ title, subtitle, type, onAppr
     </View>
     <View style={styles.pendingActions}>
       <TouchableOpacity style={styles.approveButton} onPress={onApprove}>
-        <Ionicons name="checkmark" size={20} color={colors.white} />
+        <Ionicons name="checkmark" size={20} color="#fff" />
       </TouchableOpacity>
       <TouchableOpacity style={styles.rejectButton} onPress={onReject}>
-        <Ionicons name="close" size={20} color={colors.white} />
+        <Ionicons name="close" size={20} color="#fff" />
       </TouchableOpacity>
     </View>
   </View>
@@ -62,118 +90,157 @@ const PendingItem: React.FC<PendingItemProps> = ({ title, subtitle, type, onAppr
 
 const AdminPanel: React.FC = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [selectedTab, setSelectedTab] = useState('dashboard');
+  const [currentView, setCurrentView] = useState('dashboard');
+  const [showModal, setShowModal] = useState(false);
+  const [modalType, setModalType] = useState<'users' | 'vendors' | 'products' | 'analytics'>('users');
 
-  // Mock data
-  const [dashboardData] = useState({
-    totalUsers: 125000,
-    totalVendors: 2500,
-    totalProducts: 45000,
-    activeBookings: 1200,
-    pendingApprovals: 45,
-    revenue: 2500000,
+  // Mock data - in real app, this would come from your backend
+  const [dashboardData, setDashboardData] = useState({
+    totalUsers: 1250,
+    totalVendors: 89,
+    totalProducts: 2340,
+    pendingApprovals: 15,
+    activeBookings: 67,
+    revenue: 125000,
   });
 
-  const [pendingItems] = useState([
+  const [pendingItems, setPendingItems] = useState([
     {
       id: 1,
       title: 'Raj Electronics',
-      subtitle: 'Electronics store in Chennai',
+      subtitle: 'Electronics vendor from Chennai',
       type: 'vendor' as const,
     },
     {
       id: 2,
       title: 'Samsung Galaxy S24',
-      subtitle: 'Latest smartphone listing',
+      subtitle: 'Mobile phone - ₹75,000',
       type: 'product' as const,
     },
     {
       id: 3,
-      title: '50% Off Diwali Sale',
+      title: 'Priya Stores',
+      subtitle: 'Grocery vendor from Madurai',
+      type: 'vendor' as const,
+    },
+    {
+      id: 4,
+      title: 'Diwali Offer - 50% Off',
       subtitle: 'Festival promotion campaign',
       type: 'offer' as const,
     },
   ]);
 
+  const [users, setUsers] = useState<User[]>([
+    {
+      id: 1,
+      name: 'Rajesh Kumar',
+      email: 'rajesh@gmail.com',
+      mobile: '9876543210',
+      city: 'Chennai',
+      role: 'User',
+      status: 'active',
+      createdAt: '2024-01-15',
+    },
+    {
+      id: 2,
+      name: 'Priya Sharma',
+      email: 'priya@gmail.com',
+      mobile: '9876543211',
+      city: 'Madurai',
+      role: 'Vendor',
+      status: 'pending',
+      createdAt: '2024-01-16',
+    },
+  ]);
+
   const handleLogin = () => {
-    console.log('Login attempt:', username);
-    if (username === 'admin' && password === 'price123') {
+    console.log('Login attempt:', { email, password });
+    
+    // Default admin credentials
+    if (email === 'oneaddteam@gmail.com' && password === 'Sonaiya@25') {
       setIsLoggedIn(true);
-      console.log('Login successful');
+      Alert.alert('Success', 'Welcome to PRICE.AI Master Admin Panel!');
     } else {
-      Alert.alert('Error', 'Invalid credentials. Use admin/price123 for demo.');
+      Alert.alert('Error', 'Invalid credentials. Please try again.');
     }
   };
 
   const handleApprove = (id: number, type: string) => {
-    console.log(`Approved ${type} with ID: ${id}`);
-    Alert.alert('Success', `${type} approved successfully!`);
+    console.log(`Approving ${type} with ID: ${id}`);
+    setPendingItems(prev => prev.filter(item => item.id !== id));
+    Alert.alert('Approved', `${type} has been approved successfully!`);
   };
 
   const handleReject = (id: number, type: string) => {
-    console.log(`Rejected ${type} with ID: ${id}`);
-    Alert.alert('Success', `${type} rejected successfully!`);
+    console.log(`Rejecting ${type} with ID: ${id}`);
+    setPendingItems(prev => prev.filter(item => item.id !== id));
+    Alert.alert('Rejected', `${type} has been rejected.`);
   };
 
   const handleLogout = () => {
     setIsLoggedIn(false);
-    setUsername('');
+    setEmail('');
     setPassword('');
-    console.log('User logged out');
+    Alert.alert('Logged Out', 'You have been logged out successfully.');
+  };
+
+  const openModal = (type: 'users' | 'vendors' | 'products' | 'analytics') => {
+    setModalType(type);
+    setShowModal(true);
   };
 
   if (!isLoggedIn) {
     return (
       <SafeAreaView style={styles.container}>
-        <StatusBar style="light" backgroundColor={colors.priceBlue} />
-        <LinearGradient
-          colors={[colors.priceBlue, '#2a5a8a']}
-          style={styles.loginContainer}
-        >
+        <StatusBar style="light" backgroundColor="#1e4a72" />
+        
+        <LinearGradient colors={['#1e4a72', '#2d5aa0']} style={styles.loginContainer}>
+          <View style={styles.loginHeader}>
+            <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+              <Ionicons name="arrow-back" size={24} color="#FFD700" />
+            </TouchableOpacity>
+            <View style={styles.logoContainer}>
+              <Ionicons name="shield-checkmark" size={48} color="#FFD700" />
+              <Text style={styles.loginTitle}>PRICE.AI Admin</Text>
+              <Text style={styles.loginSubtitle}>Master Control Panel</Text>
+            </View>
+          </View>
+
           <View style={styles.loginForm}>
-            <Ionicons name="shield-checkmark" size={80} color={colors.priceYellow} />
-            <Text style={styles.loginTitle}>PRICE.AI Admin Panel</Text>
-            <Text style={styles.loginSubtitle}>Master Control System</Text>
-            
             <View style={styles.inputContainer}>
-              <Ionicons name="person" size={20} color={colors.white} />
+              <Ionicons name="mail" size={20} color="#666" />
               <TextInput
-                style={styles.input}
-                placeholder="Username"
-                placeholderTextColor={colors.white + '80'}
-                value={username}
-                onChangeText={setUsername}
+                style={styles.loginInput}
+                placeholder="Admin Email"
+                value={email}
+                onChangeText={setEmail}
+                keyboardType="email-address"
                 autoCapitalize="none"
               />
             </View>
-            
+
             <View style={styles.inputContainer}>
-              <Ionicons name="lock-closed" size={20} color={colors.white} />
+              <Ionicons name="lock-closed" size={20} color="#666" />
               <TextInput
-                style={styles.input}
+                style={styles.loginInput}
                 placeholder="Password"
-                placeholderTextColor={colors.white + '80'}
                 value={password}
                 onChangeText={setPassword}
                 secureTextEntry
               />
             </View>
-            
+
             <TouchableOpacity style={styles.loginButton} onPress={handleLogin}>
-              <Text style={styles.loginButtonText}>Login</Text>
+              <Text style={styles.loginButtonText}>Access Admin Panel</Text>
+              <Ionicons name="arrow-forward" size={20} color="#1e4a72" />
             </TouchableOpacity>
-            
-            <Text style={styles.demoText}>Demo: admin / price123</Text>
-            
-            <TouchableOpacity 
-              style={styles.backButton} 
-              onPress={() => router.back()}
-            >
-              <Ionicons name="arrow-back" size={20} color={colors.white} />
-              <Text style={styles.backButtonText}>Back to Website</Text>
-            </TouchableOpacity>
+
+            <Text style={styles.loginNote}>
+              Default: oneaddteam@gmail.com / Sonaiya@25
+            </Text>
           </View>
         </LinearGradient>
       </SafeAreaView>
@@ -182,118 +249,79 @@ const AdminPanel: React.FC = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar style="light" backgroundColor={colors.priceBlue} />
+      <StatusBar style="light" backgroundColor="#1e4a72" />
       
       {/* Header */}
-      <LinearGradient
-        colors={[colors.priceBlue, '#2a5a8a']}
-        style={styles.header}
-      >
+      <LinearGradient colors={['#1e4a72', '#2d5aa0']} style={styles.header}>
         <View style={styles.headerContent}>
-          <Text style={styles.headerTitle}>PRICE.AI Admin</Text>
-          <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-            <Ionicons name="log-out" size={20} color={colors.white} />
+          <View>
+            <Text style={styles.headerTitle}>Master Admin Panel</Text>
+            <Text style={styles.headerSubtitle}>PRICE.AI Control Center</Text>
+          </View>
+          <TouchableOpacity onPress={handleLogout} style={styles.logoutButton}>
+            <Ionicons name="log-out" size={24} color="#FFD700" />
           </TouchableOpacity>
         </View>
       </LinearGradient>
 
-      {/* Tab Navigation */}
-      <View style={styles.tabContainer}>
-        <TouchableOpacity
-          style={[styles.tab, selectedTab === 'dashboard' && styles.activeTab]}
-          onPress={() => setSelectedTab('dashboard')}
-        >
-          <Text style={[styles.tabText, selectedTab === 'dashboard' && styles.activeTabText]}>
-            Dashboard
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.tab, selectedTab === 'approvals' && styles.activeTab]}
-          onPress={() => setSelectedTab('approvals')}
-        >
-          <Text style={[styles.tabText, selectedTab === 'approvals' && styles.activeTabText]}>
-            Approvals
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.tab, selectedTab === 'vendors' && styles.activeTab]}
-          onPress={() => setSelectedTab('vendors')}
-        >
-          <Text style={[styles.tabText, selectedTab === 'vendors' && styles.activeTabText]}>
-            Vendors
-          </Text>
-        </TouchableOpacity>
-      </View>
-
-      <ScrollView style={styles.content}>
-        {selectedTab === 'dashboard' && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>System Overview</Text>
-            
-            <View style={styles.statsGrid}>
-              <AdminCard
-                title="Total Users"
-                count={dashboardData.totalUsers}
-                icon="people"
-                color={colors.priceGreen}
-                onPress={() => console.log('Users clicked')}
-              />
-              <AdminCard
-                title="Total Vendors"
-                count={dashboardData.totalVendors}
-                icon="storefront"
-                color={colors.priceBlue}
-                onPress={() => console.log('Vendors clicked')}
-              />
-              <AdminCard
-                title="Total Products"
-                count={dashboardData.totalProducts}
-                icon="cube"
-                color={colors.priceYellow}
-                onPress={() => console.log('Products clicked')}
-              />
-              <AdminCard
-                title="Active Bookings"
-                count={dashboardData.activeBookings}
-                icon="ticket"
-                color="#9C27B0"
-                onPress={() => console.log('Bookings clicked')}
-              />
-            </View>
-
-            <View style={styles.revenueCard}>
-              <Text style={styles.revenueTitle}>Monthly Revenue</Text>
-              <Text style={styles.revenueAmount}>
-                ₹{(dashboardData.revenue / 100000).toFixed(1)}L
-              </Text>
-              <Text style={styles.revenueGrowth}>+15% from last month</Text>
-            </View>
-
-            <View style={styles.quickActions}>
-              <Text style={styles.sectionTitle}>Quick Actions</Text>
-              <TouchableOpacity style={styles.actionButton}>
-                <Ionicons name="add-circle" size={24} color={colors.priceBlue} />
-                <Text style={styles.actionText}>Add New Vendor</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.actionButton}>
-                <Ionicons name="megaphone" size={24} color={colors.priceGreen} />
-                <Text style={styles.actionText}>Create Promotion</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.actionButton}>
-                <Ionicons name="analytics" size={24} color={colors.priceYellow} />
-                <Text style={styles.actionText}>View Analytics</Text>
-              </TouchableOpacity>
-            </View>
+      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+        {/* Dashboard Overview */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Dashboard Overview</Text>
+          <View style={styles.statsGrid}>
+            <AdminCard
+              title="Total Users"
+              count={dashboardData.totalUsers}
+              icon="people"
+              color="#4ECDC4"
+              onPress={() => openModal('users')}
+            />
+            <AdminCard
+              title="Active Vendors"
+              count={dashboardData.totalVendors}
+              icon="storefront"
+              color="#FF6B6B"
+              onPress={() => openModal('vendors')}
+            />
+            <AdminCard
+              title="Products Listed"
+              count={dashboardData.totalProducts}
+              icon="cube"
+              color="#96CEB4"
+              onPress={() => openModal('products')}
+            />
+            <AdminCard
+              title="Pending Approvals"
+              count={dashboardData.pendingApprovals}
+              icon="time"
+              color="#FFEAA7"
+              onPress={() => {}}
+            />
+            <AdminCard
+              title="Active Bookings"
+              count={dashboardData.activeBookings}
+              icon="airplane"
+              color="#DDA0DD"
+              onPress={() => {}}
+            />
+            <AdminCard
+              title="Revenue (₹)"
+              count={dashboardData.revenue}
+              icon="trending-up"
+              color="#45B7D1"
+              onPress={() => openModal('analytics')}
+            />
           </View>
-        )}
+        </View>
 
-        {selectedTab === 'approvals' && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Pending Approvals ({pendingItems.length})</Text>
-            
+        {/* Pending Approvals */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Pending Approvals</Text>
+          <View style={styles.pendingContainer}>
             {pendingItems.map((item) => (
               <PendingItem
                 key={item.id}
+                id={item.id}
                 title={item.title}
                 subtitle={item.subtitle}
                 type={item.type}
@@ -302,33 +330,121 @@ const AdminPanel: React.FC = () => {
               />
             ))}
           </View>
-        )}
+        </View>
 
-        {selectedTab === 'vendors' && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Vendor Management</Text>
+        {/* Quick Actions */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Quick Actions</Text>
+          <View style={styles.actionsGrid}>
+            <TouchableOpacity style={[styles.actionCard, { backgroundColor: '#FF6B6B20' }]}>
+              <Ionicons name="add-circle" size={32} color="#FF6B6B" />
+              <Text style={styles.actionTitle}>Add Vendor</Text>
+            </TouchableOpacity>
             
-            <View style={styles.vendorStats}>
-              <View style={styles.statCard}>
-                <Text style={styles.statNumber}>2,500</Text>
-                <Text style={styles.statLabel}>Total Vendors</Text>
-              </View>
-              <View style={styles.statCard}>
-                <Text style={styles.statNumber}>45</Text>
-                <Text style={styles.statLabel}>Pending</Text>
-              </View>
-              <View style={styles.statCard}>
-                <Text style={styles.statNumber}>2,455</Text>
-                <Text style={styles.statLabel}>Active</Text>
-              </View>
-            </View>
-
-            <TouchableOpacity style={styles.manageButton}>
-              <Text style={styles.manageButtonText}>View All Vendors</Text>
+            <TouchableOpacity style={[styles.actionCard, { backgroundColor: '#4ECDC420' }]}>
+              <Ionicons name="cube" size={32} color="#4ECDC4" />
+              <Text style={styles.actionTitle}>Add Product</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity style={[styles.actionCard, { backgroundColor: '#96CEB420' }]}>
+              <Ionicons name="megaphone" size={32} color="#96CEB4" />
+              <Text style={styles.actionTitle}>Create Offer</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity style={[styles.actionCard, { backgroundColor: '#FFEAA720' }]}>
+              <Ionicons name="analytics" size={32} color="#FFEAA7" />
+              <Text style={styles.actionTitle}>View Reports</Text>
             </TouchableOpacity>
           </View>
-        )}
+        </View>
+
+        {/* System Health */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>System Health</Text>
+          <View style={styles.healthContainer}>
+            <View style={styles.healthItem}>
+              <View style={[styles.healthIndicator, { backgroundColor: '#4ECDC4' }]} />
+              <Text style={styles.healthText}>API Services: Online</Text>
+            </View>
+            <View style={styles.healthItem}>
+              <View style={[styles.healthIndicator, { backgroundColor: '#4ECDC4' }]} />
+              <Text style={styles.healthText}>Database: Connected</Text>
+            </View>
+            <View style={styles.healthItem}>
+              <View style={[styles.healthIndicator, { backgroundColor: '#FFEAA7' }]} />
+              <Text style={styles.healthText}>Payment Gateway: Warning</Text>
+            </View>
+            <View style={styles.healthItem}>
+              <View style={[styles.healthIndicator, { backgroundColor: '#4ECDC4' }]} />
+              <Text style={styles.healthText}>AI Services: Active</Text>
+            </View>
+          </View>
+        </View>
       </ScrollView>
+
+      {/* Modal for detailed views */}
+      <Modal visible={showModal} animationType="slide" transparent>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>
+                {modalType === 'users' && 'User Management'}
+                {modalType === 'vendors' && 'Vendor Management'}
+                {modalType === 'products' && 'Product Management'}
+                {modalType === 'analytics' && 'Analytics Dashboard'}
+              </Text>
+              <TouchableOpacity onPress={() => setShowModal(false)}>
+                <Ionicons name="close" size={24} color="#666" />
+              </TouchableOpacity>
+            </View>
+            
+            <ScrollView style={styles.modalBody}>
+              {modalType === 'users' && (
+                <View>
+                  {users.map((user) => (
+                    <View key={user.id} style={styles.userItem}>
+                      <View style={styles.userInfo}>
+                        <Text style={styles.userName}>{user.name}</Text>
+                        <Text style={styles.userDetails}>{user.email} • {user.mobile}</Text>
+                        <Text style={styles.userLocation}>{user.city} • {user.role}</Text>
+                      </View>
+                      <View style={[
+                        styles.statusBadge,
+                        { backgroundColor: user.status === 'active' ? '#4ECDC4' : '#FFEAA7' }
+                      ]}>
+                        <Text style={styles.statusText}>{user.status}</Text>
+                      </View>
+                    </View>
+                  ))}
+                </View>
+              )}
+              
+              {modalType === 'analytics' && (
+                <View style={styles.analyticsContainer}>
+                  <View style={styles.analyticsCard}>
+                    <Text style={styles.analyticsTitle}>Revenue Trend</Text>
+                    <Text style={styles.analyticsValue}>₹1,25,000</Text>
+                    <Text style={styles.analyticsChange}>+15% from last month</Text>
+                  </View>
+                  
+                  <View style={styles.analyticsCard}>
+                    <Text style={styles.analyticsTitle}>User Growth</Text>
+                    <Text style={styles.analyticsValue}>1,250</Text>
+                    <Text style={styles.analyticsChange}>+8% from last month</Text>
+                  </View>
+                  
+                  <View style={styles.analyticsCard}>
+                    <Text style={styles.analyticsTitle}>Top Categories</Text>
+                    <Text style={styles.analyticsItem}>1. Electronics - 35%</Text>
+                    <Text style={styles.analyticsItem}>2. Groceries - 28%</Text>
+                    <Text style={styles.analyticsItem}>3. Fashion - 22%</Text>
+                  </View>
+                </View>
+              )}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -336,84 +452,86 @@ const AdminPanel: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.white,
+    backgroundColor: '#f5f5f5',
   },
-  
-  // Login Styles
   loginContainer: {
     flex: 1,
     justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 20,
+    padding: 20,
   },
-  loginForm: {
-    width: '100%',
-    maxWidth: 400,
+  loginHeader: {
+    alignItems: 'center',
+    marginBottom: 40,
+  },
+  backButton: {
+    position: 'absolute',
+    top: -40,
+    left: 0,
+    padding: 8,
+  },
+  logoContainer: {
     alignItems: 'center',
   },
   loginTitle: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: colors.white,
-    marginTop: 20,
-    marginBottom: 5,
+    color: '#FFD700',
+    marginTop: 16,
   },
   loginSubtitle: {
     fontSize: 16,
-    color: colors.priceYellow,
-    marginBottom: 40,
+    color: '#fff',
+    marginTop: 4,
+  },
+  loginForm: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 5,
   },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    borderRadius: 10,
-    paddingHorizontal: 15,
-    paddingVertical: 12,
-    marginBottom: 15,
-    width: '100%',
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    marginBottom: 16,
+    backgroundColor: '#f9f9f9',
   },
-  input: {
+  loginInput: {
     flex: 1,
-    color: colors.white,
+    padding: 12,
     fontSize: 16,
-    marginLeft: 10,
+    marginLeft: 8,
   },
   loginButton: {
-    backgroundColor: colors.priceYellow,
-    paddingVertical: 15,
-    paddingHorizontal: 40,
-    borderRadius: 25,
-    marginTop: 20,
-    width: '100%',
-    alignItems: 'center',
-  },
-  loginButtonText: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: colors.darkGray,
-  },
-  demoText: {
-    fontSize: 14,
-    color: colors.white,
-    opacity: 0.7,
-    marginTop: 20,
-  },
-  backButton: {
+    backgroundColor: '#FFD700',
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 30,
-    padding: 10,
+    justifyContent: 'center',
+    padding: 16,
+    borderRadius: 8,
+    marginTop: 8,
+    gap: 8,
   },
-  backButtonText: {
-    color: colors.white,
-    marginLeft: 5,
+  loginButtonText: {
+    color: '#1e4a72',
     fontSize: 16,
+    fontWeight: '600',
   },
-
-  // Header Styles
+  loginNote: {
+    textAlign: 'center',
+    color: '#666',
+    fontSize: 12,
+    marginTop: 16,
+  },
   header: {
-    paddingVertical: 15,
+    paddingVertical: 16,
     paddingHorizontal: 20,
   },
   headerContent: {
@@ -422,214 +540,255 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   headerTitle: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: 'bold',
-    color: colors.white,
+    color: '#FFD700',
+  },
+  headerSubtitle: {
+    fontSize: 14,
+    color: '#fff',
+    marginTop: 2,
   },
   logoutButton: {
     padding: 8,
   },
-
-  // Tab Styles
-  tabContainer: {
-    flexDirection: 'row',
-    backgroundColor: colors.lightGray,
-  },
-  tab: {
-    flex: 1,
-    paddingVertical: 15,
-    alignItems: 'center',
-  },
-  activeTab: {
-    backgroundColor: colors.white,
-    borderBottomWidth: 3,
-    borderBottomColor: colors.priceBlue,
-  },
-  tabText: {
-    fontSize: 16,
-    color: colors.darkGray,
-    opacity: 0.6,
-  },
-  activeTabText: {
-    opacity: 1,
-    fontWeight: 'bold',
-  },
-
-  // Content Styles
-  content: {
+  scrollView: {
     flex: 1,
   },
   section: {
     padding: 20,
   },
   sectionTitle: {
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: 'bold',
-    color: colors.darkGray,
-    marginBottom: 20,
+    color: '#333',
+    marginBottom: 16,
   },
-
-  // Dashboard Styles
   statsGrid: {
-    marginBottom: 20,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+    justifyContent: 'space-between',
   },
   adminCard: {
-    backgroundColor: colors.white,
-    borderRadius: 10,
-    padding: 20,
-    marginBottom: 15,
+    width: (width - 60) / 2,
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 16,
     borderLeftWidth: 4,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
-  },
-  cardHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 10,
+    gap: 12,
+  },
+  cardIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  cardContent: {
+    flex: 1,
   },
   cardTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: colors.darkGray,
-    marginLeft: 10,
+    fontSize: 12,
+    color: '#666',
+    marginBottom: 4,
   },
   cardCount: {
-    fontSize: 24,
+    fontSize: 18,
     fontWeight: 'bold',
-    color: colors.darkGray,
   },
-  revenueCard: {
-    backgroundColor: colors.priceGreen,
-    borderRadius: 15,
-    padding: 25,
-    alignItems: 'center',
-    marginBottom: 20,
+  pendingContainer: {
+    gap: 12,
   },
-  revenueTitle: {
-    fontSize: 16,
-    color: colors.white,
-    opacity: 0.9,
-  },
-  revenueAmount: {
-    fontSize: 36,
-    fontWeight: 'bold',
-    color: colors.white,
-    marginVertical: 5,
-  },
-  revenueGrowth: {
-    fontSize: 14,
-    color: colors.white,
-    opacity: 0.8,
-  },
-  quickActions: {
-    marginTop: 10,
-  },
-  actionButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.lightGray,
-    borderRadius: 10,
-    padding: 15,
-    marginBottom: 10,
-  },
-  actionText: {
-    fontSize: 16,
-    color: colors.darkGray,
-    marginLeft: 15,
-  },
-
-  // Approvals Styles
   pendingItem: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 16,
     flexDirection: 'row',
-    backgroundColor: colors.white,
-    borderRadius: 10,
-    padding: 15,
-    marginBottom: 10,
+    justifyContent: 'space-between',
+    alignItems: 'center',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
+    shadowRadius: 4,
+    elevation: 3,
   },
   pendingInfo: {
     flex: 1,
   },
   pendingTitle: {
     fontSize: 16,
-    fontWeight: 'bold',
-    color: colors.darkGray,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 4,
   },
   pendingSubtitle: {
     fontSize: 14,
-    color: colors.darkGray,
-    opacity: 0.7,
-    marginVertical: 2,
+    color: '#666',
+    marginBottom: 4,
   },
   pendingType: {
     fontSize: 12,
-    color: colors.priceBlue,
-    fontWeight: 'bold',
+    color: '#999',
+    fontWeight: '500',
   },
   pendingActions: {
     flexDirection: 'row',
-    alignItems: 'center',
+    gap: 8,
   },
   approveButton: {
-    backgroundColor: colors.priceGreen,
-    borderRadius: 20,
-    width: 40,
-    height: 40,
-    alignItems: 'center',
+    backgroundColor: '#4ECDC4',
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     justifyContent: 'center',
-    marginRight: 10,
+    alignItems: 'center',
   },
   rejectButton: {
-    backgroundColor: '#ff4444',
-    borderRadius: 20,
-    width: 40,
-    height: 40,
-    alignItems: 'center',
+    backgroundColor: '#FF6B6B',
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     justifyContent: 'center',
+    alignItems: 'center',
   },
-
-  // Vendor Styles
-  vendorStats: {
+  actionsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+    justifyContent: 'space-between',
+  },
+  actionCard: {
+    width: (width - 60) / 2,
+    padding: 20,
+    borderRadius: 12,
+    alignItems: 'center',
+    gap: 8,
+  },
+  actionTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#333',
+  },
+  healthContainer: {
+    gap: 12,
+  },
+  healthItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    padding: 16,
+    borderRadius: 8,
+    gap: 12,
+  },
+  healthIndicator: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+  },
+  healthText: {
+    fontSize: 14,
+    color: '#333',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    backgroundColor: '#fff',
+    width: width * 0.9,
+    maxHeight: '80%',
+    borderRadius: 16,
+    overflow: 'hidden',
+  },
+  modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 20,
-  },
-  statCard: {
-    backgroundColor: colors.lightGray,
-    borderRadius: 10,
-    padding: 20,
     alignItems: 'center',
-    flex: 1,
-    marginHorizontal: 5,
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
   },
-  statNumber: {
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  modalBody: {
+    padding: 20,
+  },
+  userItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  userInfo: {
+    flex: 1,
+  },
+  userName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 4,
+  },
+  userDetails: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 2,
+  },
+  userLocation: {
+    fontSize: 12,
+    color: '#999',
+  },
+  statusBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  statusText: {
+    fontSize: 12,
+    color: '#fff',
+    fontWeight: '500',
+  },
+  analyticsContainer: {
+    gap: 16,
+  },
+  analyticsCard: {
+    backgroundColor: '#f9f9f9',
+    padding: 16,
+    borderRadius: 8,
+  },
+  analyticsTitle: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 8,
+  },
+  analyticsValue: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: colors.darkGray,
+    color: '#333',
+    marginBottom: 4,
   },
-  statLabel: {
+  analyticsChange: {
+    fontSize: 12,
+    color: '#4ECDC4',
+  },
+  analyticsItem: {
     fontSize: 14,
-    color: colors.darkGray,
-    opacity: 0.7,
-    marginTop: 5,
-  },
-  manageButton: {
-    backgroundColor: colors.priceBlue,
-    borderRadius: 10,
-    padding: 15,
-    alignItems: 'center',
-  },
-  manageButtonText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: colors.white,
+    color: '#333',
+    marginBottom: 4,
   },
 });
 

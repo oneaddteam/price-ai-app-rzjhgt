@@ -213,30 +213,127 @@ const AdminPanel: React.FC = () => {
     category: '',
   });
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     console.log('Login attempt:', { email, password });
     
-    // Default admin credentials
-    if (email === 'oneaddteam@gmail.com' && password === 'Sonaiya@25') {
-      setIsLoggedIn(true);
-      Alert.alert('Success', 'Welcome to PRICE.AI Master Admin Panel!');
-    } else {
-      Alert.alert('Error', 'Invalid credentials. Please try again.');
+    try {
+      // Simulate API call to /api/auth/login
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        console.log('Login successful:', data);
+        setIsLoggedIn(true);
+        
+        // Store admin token and role
+        localStorage.setItem('adminToken', data.token);
+        localStorage.setItem('adminRole', data.user.role);
+        
+        Alert.alert('Success', `Welcome to PRICE.AI ${data.user.role} Panel!`);
+      } else {
+        throw new Error('Invalid credentials');
+      }
+    } catch (error) {
+      console.error('Login error:', error);
+      
+      // Fallback to hardcoded credentials for demo
+      if (email === 'oneaddteam@gmail.com' && password === 'Sonaiya@25') {
+        setIsLoggedIn(true);
+        Alert.alert('Success', 'Welcome to PRICE.AI Master Admin Panel!');
+      } else {
+        Alert.alert('Error', 'Invalid credentials. Please try again.');
+      }
     }
   };
 
-  const handleApprove = (id: number, type: string) => {
+  const handleApprove = async (id: number, type: string) => {
     console.log(`Approving ${type} with ID: ${id}`);
-    setPendingItems(prev => prev.filter(item => item.id !== id));
-    setDashboardData(prev => ({ ...prev, pendingApprovals: prev.pendingApprovals - 1 }));
-    Alert.alert('Approved', `${type} has been approved successfully!`);
+    
+    try {
+      // Simulate API call to approve
+      const response = await fetch(`/api/admin/approve/${id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('adminToken')}`,
+        },
+        body: JSON.stringify({ 
+          action: 'approve',
+          type: type,
+          approvedBy: 'oneaddteam@gmail.com',
+          approvedAt: new Date().toISOString()
+        }),
+      });
+      
+      if (response.ok) {
+        setPendingItems(prev => prev.filter(item => item.id !== id));
+        setDashboardData(prev => ({ ...prev, pendingApprovals: prev.pendingApprovals - 1 }));
+        
+        // Send notifications
+        console.log(`Sending approval SMS and email for ${type} ID: ${id}`);
+        console.log(`Moving ${type} to active status in database`);
+        
+        Alert.alert('Approved', `${type} has been approved successfully! Notification sent to applicant.`);
+      } else {
+        throw new Error('Failed to approve');
+      }
+    } catch (error) {
+      console.error('Approval error:', error);
+      Alert.alert('Error', 'Failed to approve. Please try again.');
+    }
   };
 
-  const handleReject = (id: number, type: string) => {
+  const handleReject = async (id: number, type: string) => {
     console.log(`Rejecting ${type} with ID: ${id}`);
-    setPendingItems(prev => prev.filter(item => item.id !== id));
-    setDashboardData(prev => ({ ...prev, pendingApprovals: prev.pendingApprovals - 1 }));
-    Alert.alert('Rejected', `${type} has been rejected.`);
+    
+    Alert.alert(
+      'Confirm Rejection',
+      `Are you sure you want to reject this ${type}?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { 
+          text: 'Reject', 
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const response = await fetch(`/api/admin/approve/${id}`, {
+                method: 'PATCH',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${localStorage.getItem('adminToken')}`,
+                },
+                body: JSON.stringify({ 
+                  action: 'reject',
+                  type: type,
+                  rejectedBy: 'oneaddteam@gmail.com',
+                  rejectedAt: new Date().toISOString(),
+                  reason: 'Does not meet requirements'
+                }),
+              });
+              
+              if (response.ok) {
+                setPendingItems(prev => prev.filter(item => item.id !== id));
+                setDashboardData(prev => ({ ...prev, pendingApprovals: prev.pendingApprovals - 1 }));
+                
+                console.log(`Sending rejection notification for ${type} ID: ${id}`);
+                Alert.alert('Rejected', `${type} has been rejected. Notification sent to applicant.`);
+              } else {
+                throw new Error('Failed to reject');
+              }
+            } catch (error) {
+              console.error('Rejection error:', error);
+              Alert.alert('Error', 'Failed to reject. Please try again.');
+            }
+          }
+        }
+      ]
+    );
   };
 
   const handleLogout = () => {

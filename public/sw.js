@@ -1,12 +1,16 @@
-const CACHE_NAME = 'price-ai-v1.0.0';
+const CACHE_NAME = 'price-ai-v2.0.0';
 const urlsToCache = [
   '/',
   '/priceai',
   '/admin',
+  '/apply/vendor',
+  '/apply/user',
   '/static/js/bundle.js',
   '/static/css/main.css',
   '/assets/images/final_quest_240x240.png',
-  '/manifest.json'
+  '/manifest.json',
+  '/api/auth/login',
+  '/api/apply'
 ];
 
 // Install event

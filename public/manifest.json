@@ -1,65 +1,65 @@
 {
   "name": "PRICE.AI - Smart Pricing Assistant",
   "short_name": "PRICE.AI",
-  "description": "Pan India AI-Powered Smart Pricing & Lifestyle Assistant - விலை தெரிந்து வாங்குவது வீரம்!",
+  "description": "Pan India AI-Powered Smart Pricing & Lifestyle Assistant",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#1e4a72",
   "theme_color": "#1e4a72",
-  "orientation": "portrait-primary",
+  "orientation": "portrait",
   "icons": [
     {
-      "src": "/assets/images/final_quest_240x240.png",
-      "sizes": "240x240",
+      "src": "/icon-192.png",
+      "sizes": "192x192",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "/assets/images/final_quest_240x240.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "/assets/images/final_quest_240x240.png",
+      "src": "/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any"
+      "purpose": "any maskable"
     }
   ],
-  "categories": ["shopping", "finance", "lifestyle", "business"],
-  "lang": "en",
+  "categories": ["shopping", "finance", "travel", "lifestyle"],
+  "lang": "en-IN",
+  "dir": "ltr",
   "scope": "/",
-  "prefer_related_applications": false,
   "screenshots": [
     {
-      "src": "/assets/images/final_quest_240x240.png",
-      "sizes": "240x240",
+      "src": "/screenshot-mobile.png",
+      "sizes": "390x844",
       "type": "image/png",
       "form_factor": "narrow"
+    },
+    {
+      "src": "/screenshot-desktop.png",
+      "sizes": "1920x1080",
+      "type": "image/png",
+      "form_factor": "wide"
     }
   ],
   "shortcuts": [
     {
-      "name": "Admin Panel",
-      "short_name": "Admin",
-      "description": "Access PRICE.AI Admin Panel",
-      "url": "/admin",
+      "name": "Price Search",
+      "short_name": "Search",
+      "description": "Search for best prices",
+      "url": "/priceai?mode=search",
       "icons": [
         {
-          "src": "/assets/images/final_quest_240x240.png",
+          "src": "/search-icon.png",
           "sizes": "96x96"
         }
       ]
     },
     {
-      "name": "Price Search",
-      "short_name": "Search",
-      "description": "Search for product prices",
-      "url": "/priceai",
+      "name": "Admin Panel",
+      "short_name": "Admin",
+      "description": "Access admin panel",
+      "url": "/admin",
       "icons": [
         {
-          "src": "/assets/images/final_quest_240x240.png",
+          "src": "/admin-icon.png",
           "sizes": "96x96"
         }
       ]

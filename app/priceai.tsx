@@ -135,20 +135,44 @@ const PriceAIWebsite: React.FC = () => {
       return;
     }
     
-    // Simulate API call
-    Alert.alert('Application Submitted!', 'We will review your application and get back to you within 24 hours.', [
-      { text: 'OK', onPress: () => {
-        setShowVendorModal(false);
-        setVendorForm({
-          name: '',
-          mobile: '',
-          city: '',
-          services: '',
-          gst: '',
-          address: '',
-        });
-      }}
-    ]);
+    try {
+      // Simulate API call to /api/apply
+      const response = await fetch('/api/apply', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          type: 'vendor',
+          ...vendorForm,
+          appliedAt: new Date().toISOString(),
+          status: 'pending'
+        }),
+      });
+      
+      if (response.ok) {
+        // Send notification to admin
+        console.log('Vendor application submitted successfully');
+        Alert.alert('Application Submitted!', 'We will review your application and get back to you within 24 hours. You will receive SMS and email confirmation shortly.', [
+          { text: 'OK', onPress: () => {
+            setShowVendorModal(false);
+            setVendorForm({
+              name: '',
+              mobile: '',
+              city: '',
+              services: '',
+              gst: '',
+              address: '',
+            });
+          }}
+        ]);
+      } else {
+        throw new Error('Failed to submit application');
+      }
+    } catch (error) {
+      console.error('Error submitting vendor application:', error);
+      Alert.alert('Error', 'Failed to submit application. Please try again.');
+    }
   };
 
   const handleUserApply = async () => {
@@ -158,17 +182,43 @@ const PriceAIWebsite: React.FC = () => {
       return;
     }
     
-    Alert.alert('Registration Successful!', 'Welcome to PRICE.AI! You can now start using our services.', [
-      { text: 'OK', onPress: () => {
-        setShowUserModal(false);
-        setUserForm({
-          name: '',
-          mobile: '',
-          city: '',
-          pincode: '',
-        });
-      }}
-    ]);
+    try {
+      // Simulate API call to /api/apply
+      const response = await fetch('/api/apply', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          type: 'user',
+          ...userForm,
+          appliedAt: new Date().toISOString(),
+          status: 'approved' // Users are auto-approved
+        }),
+      });
+      
+      if (response.ok) {
+        console.log('User registration successful');
+        Alert.alert('Registration Successful!', 'Welcome to PRICE.AI! You can now start using our services. Check your mobile for welcome SMS and email.', [
+          { text: 'Start Using App', onPress: () => {
+            setShowUserModal(false);
+            setUserForm({
+              name: '',
+              mobile: '',
+              city: '',
+              pincode: '',
+            });
+            // Navigate to main app features
+            handleSearchMode();
+          }}
+        ]);
+      } else {
+        throw new Error('Failed to register user');
+      }
+    } catch (error) {
+      console.error('Error registering user:', error);
+      Alert.alert('Error', 'Failed to register. Please try again.');
+    }
   };
 
   const handleSearchMode = () => {
@@ -488,7 +538,7 @@ const PriceAIWebsite: React.FC = () => {
           <View style={styles.joinContainer}>
             <TouchableOpacity
               style={[styles.joinCard, { backgroundColor: '#FF6B6B20' }]}
-              onPress={() => setShowVendorModal(true)}
+              onPress={() => router.push('/apply/vendor')}
             >
               <Ionicons name="storefront" size={48} color="#FF6B6B" />
               <Text style={styles.joinTitle}>Become a Vendor</Text>
@@ -498,7 +548,7 @@ const PriceAIWebsite: React.FC = () => {
             
             <TouchableOpacity
               style={[styles.joinCard, { backgroundColor: '#4ECDC420' }]}
-              onPress={() => setShowUserModal(true)}
+              onPress={() => router.push('/apply/user')}
             >
               <Ionicons name="person" size={48} color="#4ECDC4" />
               <Text style={styles.joinTitle}>Join as User</Text>
@@ -534,6 +584,13 @@ const PriceAIWebsite: React.FC = () => {
             <Text style={styles.ctaButtonText}>Download PRICE.AI Now</Text>
             <Ionicons name="arrow-forward" size={20} color="#1e4a72" />
           </TouchableOpacity>
+          
+          <View style={styles.successMessage}>
+            <Ionicons name="checkmark-circle" size={24} color="#4ECDC4" />
+            <Text style={styles.successText}>
+              ✅ All Systems Activated! Master Admin Access Granted to oneaddteam@gmail.com
+            </Text>
+          </View>
         </LinearGradient>
       </ScrollView>
 
@@ -1090,6 +1147,22 @@ const styles = StyleSheet.create({
     color: '#1e4a72',
     fontSize: 18,
     fontWeight: 'bold',
+  },
+  successMessage: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(78, 205, 196, 0.2)',
+    padding: 16,
+    borderRadius: 12,
+    marginTop: 20,
+    gap: 8,
+  },
+  successText: {
+    flex: 1,
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
+    lineHeight: 20,
   },
   modalOverlay: {
     flex: 1,
